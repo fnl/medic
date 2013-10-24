@@ -2,6 +2,8 @@
 *.pyc
 /.*
 /bin
+/dist
 /include
 /lib
 /man
+/MANIFEST

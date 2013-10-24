@@ -1,14 +1,20 @@
 from distutils.core import setup
 
+try:
+    with open('README.rst') as file:
+            long_description = file.read()
+except IOError:
+    long_description = "missing"
+
 setup(
     name='medic',
-    version='1',
+    version='1.0.2',
     license='GNU GPL v3',
     author='Florian Leitner',
     author_email='florian.leitner@gmail.com',
     url='https://github.com/fnl/medic',
     description='A command line tool to manage a PubMed DB mirror.',
-    long_description=open('README.rst').read(),
+    long_description=long_description,
     install_requires=[
         'sqlalchemy >= 0.8',
     ],
