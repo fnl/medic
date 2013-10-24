@@ -1,10 +1,4 @@
 from distutils.core import setup
-#from distutils.command.install import INSTALL_SCHEMES
-# from Cython.Distutils import build_ext
-# from distutils.extension import Extension
-
-#for scheme in INSTALL_SCHEMES.values():
-#    scheme['data'] = scheme['purelib']
 
 setup(
     name='medic',
@@ -13,22 +7,23 @@ setup(
     author='Florian Leitner',
     author_email='florian.leitner@gmail.com',
     url='https://github.com/fnl/medic',
-    description='a command line tool to manage a MEDLINE DB',
+    description='A command line tool to manage a PubMed DB mirror.',
     long_description=open('README.rst').read(),
     install_requires=[
         'sqlalchemy >= 0.8',
-        'psycopg2 >= 2.4',
-        'nose',
     ],
+    py_modules=['medic'],
     packages=[
         'medic',
     ],
-    package_dir={ '': 'src' },
+    package_dir={
+        '': 'src',
+    },
     scripts=[
         'scripts/medic',
     ],
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 4 - Beta',
         'Environment :: Console',
         'License :: OSI Approved :: GNU Affero General Public License v3',
         'Operating System :: POSIX',
