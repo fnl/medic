@@ -1,3 +1,7 @@
+#####
+MEDIC
+#####
+
 Synopsis
 ========
 
@@ -49,26 +53,44 @@ Section (sections)
 Supported PubMed XML Elements
 =============================
 
-- PMID
-- ArticleTitle (`Section.name` ``Title``)
-- VernacularTitle (`Section.name` ``Vernacular``)
-- AbstractText (`Section.name` ``Abstract`` or capitalized NlmCategory)
-- CopyrightInformation (`Section.name` ``Copyright``)
-- DescriptorName (`Descriptor.name` MeSH term descriptor)
-- QualifierName (`Qualifier.name` MeSH term qualifier)
+Entities
+--------
+
+- The citation (`Medline` and `Identifier`)
+- Title, Abstract, and Copyright (`Section`)
 - Author (`Author`)
-- ELocationID (`Identifier`)
-- OtherID (`Identifier`)
-- DataBankName (`Database.name`)
+- Chemical (`Chemcial`)
+- DataBank (`Database`)
+- MeshHeading (`Descriptor` and `Qualifier`)
+- DeleteCitation (for deleting records when parsing updates)
+
+Fields/Values
+-------------
+
+- AbstractText (`Section.name` "Abstract" or the ``NlmCategory``, `Section.content` with ``Label`` as `Section.label`)
 - AccessionNumber (`Database.accession`)
-- SubstanceName (`Chemcial.name`)
-- RegistryNumber (`Chemical.uid`)
-- ArticleId (`Identifier`; only available in online PubMed XML)
-- MedlineCitation (only Status; `Medline.status`)
+- ArticleId (`Identifier.value` with ``IdType`` as `Identifier.namesapce`; only available in online PubMed XML)
+- ArticleTitle (`Section.name` "Title", `Section.content`)
+- CollectiveName (`Author.name`)
+- CopyrightInformation (`Section.name` "Copyright", `Section.content`)
+- DataBankName (`Database.name`)
 - DateCompleted (`Medline.completed`)
 - DateCreated (`Medline.created`)
 - DateRevised (`Medline.revised`)
+- DescriptorName (`Descriptor.name` with ``MajorTopicYN`` as `Descriptor.major`)
+- ELocationID (`Identifier.value` with ``EIdType`` as `Identifier.namespace`)
+- ForeName (`Author.forename`)
+- Initials (`Author.initials`)
+- LastName (`Author.name`)
+- MedlineCitation (only ``Status`` as `Medline.status`)
 - MedlineTA (`Medline.journal`)
+- NameOfSubstance (`Chemcial.name`)
+- OtherID (`Identifier.value` iff ``Source`` is "PMC" with `Identifier.namespace` as "pmc")
+- PMID (`Medline.pmid`)
+- QualifierName (`Qualifier.name` with ``MajorTopicYN`` as `Qualifier.major`)
+- RegistryNumber (`Chemical.uid`)
+- Suffix (`Author.suffix`)
+- VernacularTitle (`Section.name` "Vernacular", `Section.content`)
 
 Requirements
 ============
@@ -100,7 +122,8 @@ In short, this tool currently **only removes** alternate citations.
 Setup
 =====
 
-If needed, install all dependencies/requirements::
+If you are **not** using ``pip install medic``, install all
+dependencies/requirements::
 
     pip install argparse # only for python3 < 3.2
     pip install sqlalchemy
@@ -115,7 +138,7 @@ Usage
 
 ``medic [options] COMMAND PMID|FILE...``
 
-The ``--url URL`` option representing the DSN of the database might
+The ``--url URL`` option represents the DSN of the database and might
 be needed (default: ``postgresql://localhost/medline``); For example:
 
 Postgres
@@ -148,17 +171,23 @@ The tool has five **COMMAND** options:
 For example, to download two PubMed records by PMID and put them into
 the DB::
 
-    fnlmedline.py update 1000 123456
+    medic update 1000 123456
 
-To insert a MEDLINE XML file into the DB::
+To add a MEDLINE XML update file to the DB::
 
-    fnlmedline.py insert medline.xml
+    medic parse --update medline14n1234.xml.gz
+    psql medline -f delete.sql
+    # load all tables; see below
 
-Read MEDLINE XML files for dumping large collections::
+Add a single MEDLINE XML file quickly to the database::
 
-    fnlmedline.py parse medline*.xml.gz
+    medic insert medline13n0001.xml.gz
 
-Note that in the last example, because of the suffix ".gz", the parser
+Remove a few records from the database::
+
+    medic delete 292837491 128374 213487
+
+Note that in the last examples, because of the suffix ".gz", the parser
 automatically decompresses the file(s) first. This feature *only*
 works with GNU-zipped files and the ".gz" suffix must be present.
 
@@ -175,16 +204,25 @@ Loading the MEDLINE baseline
 ============================
 
 Please be aware that the MEDLINE baseline **is not unique**, meaning that it
-contains a few records multiple times (see the above notice about the VersionID).
+contains a few records multiple times (see the above notice about the
+``VersionID`` above).
+
 For example, in the 2013 baseline, PMID 20029614 is present ten times in the
-baseline, each version at a different stage of revision. Because it is the first
-entry (in the order they appear in the baseline files) without a VersionID that
-seems to be the relevant record, it is possible to filter these duplicates while
-doing a ``parse``, ``insert`` or ``update`` by using the ``--uniq`` option. This
-will simply skip citations that have a VersionID other than `1`.
+baseline, each version at a different stage of revision. Because it is the
+first entry (in the order they appear in the baseline files) without a
+``VersionID`` that seems to be the relevant record, it ``medic`` by default
+filters citations with other versions than "1". If you want to actually parse
+other versions of a citation, use the option ``--all``.
 
 To quickly load a parsed dump into a PostgreSQL DB on the same machine, do::
 
-    for table in records descriptors qualifiers authors sections databases identifiers chemicals;
+    for table in records descriptors qualifiers authors sections databases \
+    identifiers chemicals;
       do psql medline -c "COPY $table FROM '`pwd`/${table}.tab';";
     done
+
+For the update files, you need to go one-by-one, adding them in order, and
+using the flag ``--update`` when parsing the XML. After parsing an XML file
+and *before* loading the dumps, run ``psql medline -f delete.sql`` to get rid
+of all entities that are being updated or should be removed (PMIDs listed as
+``DeleteCitation``\ s).
