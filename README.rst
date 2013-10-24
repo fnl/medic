@@ -155,7 +155,8 @@ The tool has five **COMMAND** options:
 ``write``
     write records as plaintext files to a directory, each file named as
     "<pmid>.txt", and containing most of the DB stored content or just the
-    TIAB (title and abstract)
+    TIAB (title and abstract). In addition, summary files in TSV and HTML
+    format can be generated (see option ``--format``).
 ``update``
     insert or update records in the DB (instead of creating them); note that
     if a record exists, but is added with ``create``, this would throw an
@@ -183,13 +184,13 @@ Add a single MEDLINE XML file quickly to the database::
 
     medic insert medline13n0001.xml.gz
 
-Remove a few records from the database::
+Export a few records from the database into a HTML file::
 
-    medic delete 292837491 128374 213487
+    medic write --format html 292837491 128374 213487
 
-Note that in the last examples, because of the suffix ".gz", the parser
-automatically decompresses the file(s) first. This feature *only*
-works with GNU-zipped files and the ".gz" suffix must be present.
+Note that in the above examples, because of the suffix ".gz", the parser
+automatically decompresses the file(s) first. This feature *only* works
+with GNU-zipped files and the ".gz" suffix must be present.
 
 Therefore, command line arguments are treated as follows:
 
