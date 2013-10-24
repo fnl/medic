@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MedlineCitationSet PUBLIC "-//NLM//DTD Medline Citation, 1st January, 2013//EN"
+          "http://www.nlm.nih.gov/databases/dtd/nlmmedlinecitationset_130101.dtd">
+<!-- An XML containing all possible elements except for the Season element in PubDate; also covers the frequent encoding artifacts found in MEDLINE -->
+<MedlineCitationSet>
+    <PubmedArticle>
+        <MedlineCitation Owner="NLM" Status="MEDLINE" VersionID="1" VersionDate="2012/02/01">
+            <PMID Version="1">123</PMID>
+            <DateCreated>
+                <Year>1974</Year>
+                <Month>2</Month>
+                <Day>19</Day>
+            </DateCreated>
+            <DateCompleted>
+                <Year>1974</Year>
+                <Month>nov</Month>
+                <Day>19</Day>
+            </DateCompleted>
+            <DateRevised>
+                <Year>2006</Year>
+                <Month>FEB</Month>
+                <Day>14</Day>
+            </DateRevised>
+            <Article PubModel="Print">
+                <Journal>
+                    <ISSN IssnType="Print">0000-000A</ISSN>
+                    <JournalIssue CitedMedium="Print">
+                        <Volume>vol 1</Volume>
+                        <Issue>no 1</Issue>
+                        <PubDate>
+                            <MedlineDate>some random date string</MedlineDate>
+                            <!-- PubDate ((Year, ((Month, Day?) | Season)?) | MedlineDate) -->
+                        </PubDate>
+                    </JournalIssue>
+                    <Title>journal title</Title>
+                    <ISOAbbreviation>Jour ISO Abbrev</ISOAbbreviation>
+                </Journal>
+                <ArticleTitle>[a translated title].</ArticleTitle>
+                <Pagination>
+                    <StartPage>0</StartPage>
+                    <EndPage>10</EndPage>
+                    <MedlinePgn>100-10</MedlinePgn>
+                </Pagination>
+                <ELocationID EIdType="doi">valid doi</ELocationID>
+                <ELocationID EIdType="pii" ValidYN="N">invalid pii</ELocationID>
+                <Abstract>
+                    <AbstractText Label="background label"
+                                  NlmCategory="BACKGROUND">background text</AbstractText>
+                    <AbstractText Label="objective label"
+                                  NlmCategory="OBJECTIVE">objective text</AbstractText>
+                    <AbstractText Label="methods label"
+                                  NlmCategory="METHODS">methods text</AbstractText>
+                    <AbstractText Label="methods label"
+                                  NlmCategory="METHODS">duplicate methods</AbstractText>
+                    <AbstractText Label="results label"
+                                  NlmCategory="RESULTS">results text</AbstractText>
+                    <AbstractText Label="conclusions label"
+                                  NlmCategory="CONCLUSIONS">conclusions text</AbstractText>
+                    <AbstractText NlmCategory="UNLABELLED">unlabelled text with&#xa0;encoding&#x96;errors</AbstractText>
+                    <AbstractText Label="abstract label">abstract text</AbstractText>
+                    <AbstractText>default text</AbstractText>
+                    <CopyrightInformation>copyright info</CopyrightInformation>
+                </Abstract>
+                <Affiliation>affiliation string</Affiliation>
+                <AuthorList CompleteYN="Y">
+                    <Author ValidYN="Y">
+                        <LastName>Author</LastName>
+                        <ForeName>First</ForeName>
+                        <Affiliation>affiliation</Affiliation>
+                    </Author>
+                    <Author ValidYN="Y">
+                        <LastName>Middle</LastName>
+                        <Suffix>Suf</Suffix>
+                    </Author>
+                    <Author ValidYN="Y">
+                        <LastName>Author</LastName>
+                        <ForeName>P Last</ForeName>
+                        <Initials>PL</Initials>
+                        <Affiliation>affiliation</Affiliation>
+                    </Author>
+                </AuthorList>
+                <Language>ger</Language>
+                <Language>rus</Language>
+                <Language>eng</Language>
+                <DataBankList CompleteYN="N">
+                    <DataBank>
+                        <DataBankName>db1</DataBankName>
+                        <AccessionNumberList>
+                            <AccessionNumber>acc1</AccessionNumber>
+                            <AccessionNumber/>
+                            <AccessionNumber>acc2</AccessionNumber>
+                            <AccessionNumber>acc3</AccessionNumber>
+                        </AccessionNumberList>
+                    </DataBank>
+                    <DataBank/>
+                    <DataBank>
+                        <DataBankName>db2</DataBankName>
+                        <AccessionNumberList>
+                            <AccessionNumber>acc</AccessionNumber>
+                            <AccessionNumber>acc</AccessionNumber>
+                        </AccessionNumberList>
+                    </DataBank>
+                    <DataBank>
+                      <DataBankName/>
+                      <AccessionNumberList>
+                        <AccessionNumber>junk</AccessionNumber>
+                      </AccessionNumberList>
+                    </DataBank>
+                </DataBankList>
+                <GrantList CompleteYN="N">
+                    <Grant>
+                        <GrantID>grant 1 ID</GrantID>
+                        <Acronym>gran 1 acro</Acronym>
+                        <Agency>grant 1 agency</Agency>
+                        <Country>grant 1 country</Country>
+                    </Grant>
+                    <Grant>
+                        <Agency>grant 2 agency</Agency>
+                        <Country>grant 2 country</Country>
+                    </Grant>
+                </GrantList>
+                <PublicationTypeList>
+                    <PublicationType>publication type 1</PublicationType>
+                    <PublicationType>publication type 2</PublicationType>
+                </PublicationTypeList>
+                <VernacularTitle>non-english article title</VernacularTitle>
+                <ArticleDate>
+                    <Year>2000</Year>
+                    <Month>FEB</Month>
+                    <Day>1</Day>
+                </ArticleDate>
+                <ArticleDate DateType="Electronic">
+                    <Year>1999</Year>
+                    <Month>7</Month>
+                    <Day>31</Day>
+                </ArticleDate>
+            </Article>
+            <MedlineJournalInfo>
+                <Country>COUNTRY</Country>
+                <MedlineTA>NLM Jour Abbrev</MedlineTA>
+                <NlmUniqueID>0123ABC</NlmUniqueID>
+                <ISSNLinking>0000-0000</ISSNLinking>
+            </MedlineJournalInfo>
+            <ChemicalList>
+                <Chemical>
+                    <RegistryNumber>0</RegistryNumber>
+                    <NameOfSubstance>chemical substance 1</NameOfSubstance>
+                </Chemical>
+                <Chemical>
+                    <RegistryNumber>EC 1.1.1.1</RegistryNumber>
+                    <NameOfSubstance>chemical substance 2</NameOfSubstance>
+                </Chemical>
+            </ChemicalList>
+            <SupplMeshList>
+                <SupplMeshName Type="Protocol">protocol</SupplMeshName>
+                <SupplMeshName Type="Disease">disease</SupplMeshName>
+            </SupplMeshList>
+            <CitationSubset>ABC</CitationSubset>
+            <CitationSubset>XYZ</CitationSubset>
+            <CommentsCorrectionsList>
+                <CommentsCorrections RefType="CommentOn">
+                    <RefSource>source 1 reference</RefSource>
+                    <PMID Version="1">123456</PMID>
+                    <Note>comment 1 note</Note>
+                </CommentsCorrections>
+                <CommentsCorrections RefType="RetractionOf">
+                    <RefSource>source 2 reference</RefSource>
+                    <PMID Version="1">654321</PMID>
+                    <Note>comment 2 note</Note>
+                </CommentsCorrections>
+            </CommentsCorrectionsList>
+            <GeneSymbolList>
+                <GeneSymbol>gene symbol 1</GeneSymbol>
+                <GeneSymbol>gene symbol 2</GeneSymbol>
+            </GeneSymbolList>
+            <MeshHeadingList>
+                <MeshHeading>
+                    <DescriptorName Type="Geographic">minor geographic descriptor</DescriptorName>
+                    <QualifierName>minor qualifier</QualifierName>
+                </MeshHeading>
+                <MeshHeading>
+                    <DescriptorName MajorTopicYN="Y">major descriptor</DescriptorName>
+                    <QualifierName MajorTopicYN="Y">major qualifier</QualifierName>
+                    <QualifierName>another qualifier</QualifierName>
+                </MeshHeading>
+                <MeshHeading>
+                    <DescriptorName MajorTopicYN="Y">major descriptor</DescriptorName>
+                    <QualifierName MajorTopicYN="N">minor qualifier</QualifierName>
+                </MeshHeading>
+                <MeshHeading>
+                    <DescriptorName MajorTopicYN="N">minor descriptor</DescriptorName>
+                    <QualifierName MajorTopicYN="Y">major qualifier</QualifierName>
+                </MeshHeading>
+            </MeshHeadingList>
+            <NumberOfReferences>23</NumberOfReferences>
+            <PersonalNameSubjectList>
+                <PersonalNameSubject>
+                    <LastName>Subject1</LastName>
+                    <ForeName>A Name</ForeName>
+                    <Initials>AN</Initials>
+                    <Suffix>Suf</Suffix>
+                </PersonalNameSubject>
+                <PersonalNameSubject>
+                    <LastName>Subject2</LastName>
+                </PersonalNameSubject>
+            </PersonalNameSubjectList>
+            <OtherID Source="NLM">PMC12345 [junk here]</OtherID>
+            <OtherAbstract Type="Publisher">
+                <AbstractText>explanation for publisher abstract</AbstractText>
+            </OtherAbstract>
+            <OtherAbstract Type="NASA">
+                <AbstractText Label="NASA label"
+                              NlmCategory="CONCLUSIONS">NASA conclusions</AbstractText>
+                <CopyrightInformation>NASA copyright</CopyrightInformation>
+            </OtherAbstract>
+            <KeywordList>
+                <Keyword>default minor keyword</Keyword>
+                <Keyword MajorTopicYN="Y">major keyword</Keyword>
+                <Keyword MajorTopicYN="N">minor keyword</Keyword>
+            </KeywordList>
+            <KeywordList Owner="NASA">
+                <Keyword>NASA keyword</Keyword>
+            </KeywordList>
+            <SpaceFlightMission>mission 1 text</SpaceFlightMission>
+            <SpaceFlightMission>mission 2 text</SpaceFlightMission>
+            <InvestigatorList>
+                <Investigator ValidYN="N">
+                    <LastName>Investigator</LastName>
+                    <ForeName>F Name</ForeName>
+                    <Initials>FN</Initials>
+                    <Suffix>Invalid</Suffix>
+                    <Identifier Source="src">id1</Identifier>
+                    <Identifier Source="src">id2</Identifier>
+                    <Affiliation>affiliation</Affiliation>
+                </Investigator>
+                <Investigator>
+                    <LastName>Investigator2</LastName>
+                </Investigator>
+            </InvestigatorList>
+            <GeneralNote>NLM default note</GeneralNote>
+            <GeneralNote Owner="NASA">NASA note</GeneralNote>
+        </MedlineCitation>
+    </PubmedArticle>
+    <PubmedArticle>
+        <MedlineCitation Owner="NLM" Status="MEDLINE" VersionID="2" VersionDate="2012/02/01">
+            <PMID Version="2">987</PMID>
+            <DateCreated>
+                <Year>1974</Year>
+                <Month>2</Month>
+                <Day>19</Day>
+            </DateCreated>
+            <DateCompleted>
+                <Year>1974</Year>
+                <Month>nov</Month>
+                <Day>19</Day>
+            </DateCompleted>
+            <DateRevised>
+                <Year>2006</Year>
+                <Month>FEB</Month>
+                <Day>14</Day>
+            </DateRevised>
+            <MedlineJournalInfo>
+                <Country>COUNTRY</Country>
+                <MedlineTA>NLM Jour Abbrev</MedlineTA>
+                <NlmUniqueID>0123ABC</NlmUniqueID>
+                <ISSNLinking>0000-0000</ISSNLinking>
+            </MedlineJournalInfo>
+        </MedlineCitation>
+        <ArticleId IdType="doi">some doi</ArticleId>
+    </PubmedArticle>
+    <DeleteCitation>
+        <PMID Version="1">123</PMID>
+        <PMID Version="1">987</PMID>
+    </DeleteCitation>
+</MedlineCitationSet>
