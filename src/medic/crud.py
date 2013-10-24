@@ -64,7 +64,7 @@ def dump(files: iter, output_dir: str, unique: bool, update: bool):
         Identifier.__tablename__: open(join(output_dir, "identifiers.tab"), "wt"),
         Database.__tablename__: open(join(output_dir, "databases.tab"), "wt"),
         Chemical.__tablename__: open(join(output_dir, "chemicals.tab"), "wt"),
-        'delete': open(join(output_dir, "delete.txt"), "wt"),
+        'delete': open(join(output_dir, "delete.sql"), "wt"),
     }
     count = 0
     parser = MedlineXMLParser(unique)

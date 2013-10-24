@@ -43,20 +43,24 @@ class TestDump(unittest.TestCase):
             Identifier.__tablename__: StringIO(),
             Database.__tablename__: StringIO(),
             Chemical.__tablename__: StringIO(),
+            'delete': StringIO(),
         }
 
     def testDumpCount(self):
         parser = ParserMock(DATA + DATA)
-        self.assertEqual(2, _dump(TemporaryFile(), self.out, parser))
+        self.assertEqual(2, _dump(TemporaryFile(), self.out, parser, False))
 
     def testDumping(self):
         parser = ParserMock(DATA)
         results = defaultdict(str)
+        results['delete'] = "DELETE FROM {} WHERE pmid = ANY (VALUES (1), (".format(
+            Medline.__tablename__
+        )
 
         for i in DATA:
             results[i.__tablename__] += str(i)
 
-        self.assertEqual(1, _dump(TemporaryFile(), self.out, parser))
+        self.assertEqual(1, _dump(TemporaryFile(), self.out, parser, True))
 
         for tbl, buff in self.out.items():
             self.assertEqual(results[tbl], buff.getvalue())
