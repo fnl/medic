@@ -300,6 +300,10 @@ if __name__ == '__main__':
         help='parse records with VersionID != "1"'
     )
     parser.add_argument(
+        '--update', action='store_true',
+        help='parsing MEDLINE update files: list all updated PMIDs in delete.sql'
+    )
+    parser.add_argument(
         '--pmid-lists', action='store_true',
         help='assume input files are lists of PMIDs, not XML files'
     )
@@ -336,7 +340,7 @@ if __name__ == '__main__':
     if args.command == 'parse':
         from medic.crud import dump
 
-        result = dump(args.files, args.output, not args.all)
+        result = dump(args.files, args.output, not args.all, args.update)
     else:
         try:
             InitDb(args.url)

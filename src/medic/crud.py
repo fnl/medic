@@ -9,8 +9,8 @@ import logging
 
 from itertools import chain
 from gzip import open as gunzip
+from os import remove
 from os.path import join
-from types import LambdaType
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from sqlalchemy.orm import Session
 
@@ -53,7 +53,7 @@ def delete(session: Session, pmids: list([int])) -> bool:
     return True
 
 
-def dump(files: iter, output_dir: str, unique: bool):
+def dump(files: iter, output_dir: str, unique: bool, update: bool):
     "Parse MEDLINE XML files into tabular flat-files for each DB table."
     out_stream = {
         Medline.__tablename__: open(join(output_dir, "records.tab"), "wt"),
@@ -64,7 +64,7 @@ def dump(files: iter, output_dir: str, unique: bool):
         Identifier.__tablename__: open(join(output_dir, "identifiers.tab"), "wt"),
         Database.__tablename__: open(join(output_dir, "databases.tab"), "wt"),
         Chemical.__tablename__: open(join(output_dir, "chemicals.tab"), "wt"),
-        'delete': lambda: open(join(output_dir, "delete.txt"), "wt"),
+        'delete': open(join(output_dir, "delete.txt"), "wt"),
     }
     count = 0
     parser = MedlineXMLParser(unique)
@@ -77,40 +77,47 @@ def dump(files: iter, output_dir: str, unique: bool):
         else:
             in_stream = open(f)
 
-        count += _dump(in_stream, out_stream, parser)
+        count += _dump(in_stream, out_stream, parser, update)
 
-    if not isinstance(out_stream['delete'], LambdaType):
+    if out_stream['delete'].tell() != 0:
         out_stream['delete'].write('0));')
 
     for stream in out_stream.values():
-        if not isinstance(stream, LambdaType):
+        if stream.tell() == 0:
+            stream.close()
+            remove(join(output_dir, stream.name))
+        else:
             stream.close()
 
     logger.info("parsed %i records", count)
 
 
-def _dump(in_stream, out_stream: dict, parser: Parser) -> int:
+def _dump(in_stream, out_stream: dict, parser: Parser, update: bool) -> int:
     logger.info('dumping %s', in_stream.name)
     count = 0
 
     for i in parser.parse(in_stream):
         if type(i) == int:
-            if isinstance(out_stream['delete'], LambdaType):
-                out_stream['delete'] = out_stream['delete']()
-                out_stream['delete'].write(
-                    'DELETE FROM {} WHERE pmid = ANY (VALUES ('.format(
-                        Medline.__tablename__
-                    )
-                )
-            out_stream['delete'].write(str(i))
-            out_stream['delete'].write('), (')
+            _delete(out_stream['delete'], i)
         else:
             out_stream[i.__tablename__].write(str(i))
 
             if i.__tablename__ == Medline.__tablename__:
                 count += 1
 
+                if update:
+                    _delete(out_stream['delete'], i.pmid)
+
     return count
+
+
+def _delete(stream, pmid):
+    if stream.tell() == 0:
+        stream.write('DELETE FROM {} WHERE pmid = ANY (VALUES ('.format(
+            Medline.__tablename__
+        ))
+    stream.write(str(pmid))
+    stream.write('), (')
 
 
 def _add(session: Session, files_or_pmids: iter, dbHandle, unique=True):
