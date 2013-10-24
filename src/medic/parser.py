@@ -205,11 +205,11 @@ class MedlineXMLParser(Parser):
                 if child.tag == 'LastName':
                     name = text
                 elif child.tag == 'ForeName':
-                    forename = text
+                    forename = text[:128]
                 elif child.tag == 'Initials':
-                    initials = text
+                    initials = text[:128]
                 elif child.tag == 'Suffix':
-                    suffix = text
+                    suffix = text[:128]
                 elif child.tag == 'CollectiveName':
                     name = text
                     forename = ''
