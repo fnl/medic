@@ -98,7 +98,10 @@ class Parser:
         elif element.tag == 'DeleteCitation':
             for pmid in self.DeleteCitation(element):
                 yield pmid
-        elif not self.isSkipping() and hasattr(self, element.tag):
+        elif self.isSkipping():
+            if element.tag == 'MedlineCitation':
+                self.undefined()
+        elif hasattr(self, element.tag):
             logger.debug('processing %s: %s', element.tag, repr(element.text))
             instance = getattr(self, element.tag)(element)
 
@@ -112,6 +115,7 @@ class Parser:
                     yield instance
             else:
                 logger.debug('ignored %s', element.tag)
+
 
     def DeleteCitation(self, element):
         for pmid in element.findall('PMID'):
