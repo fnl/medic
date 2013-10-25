@@ -1,0 +1,442 @@
+.\" Man page generated from reStructuredText.
+.
+.TH MEDIC  "" "" ""
+.SH NAME
+medic \- a command-line tool to maintain a DB mirror of MEDLINE
+.
+.nr rst2man-indent-level 0
+.
+.de1 rstReportMargin
+\\$1 \\n[an-margin]
+level \\n[rst2man-indent-level]
+level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-
+\\n[rst2man-indent0]
+\\n[rst2man-indent1]
+\\n[rst2man-indent2]
+..
+.de1 INDENT
+.\" .rstReportMargin pre:
+. RS \\$1
+. nr rst2man-indent\\n[rst2man-indent-level] \\n[an-margin]
+. nr rst2man-indent-level +1
+.\" .rstReportMargin post:
+..
+.de UNINDENT
+. RE
+.\" indent \\n[an-margin]
+.\" old: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.nr rst2man-indent-level -1
+.\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+..
+.sp
+A tool to parse MEDLINE XML files or
+download eUtils\(aq PubMed XML records,
+bootstrapping a MEDLINE/PubMed database,
+updating and/or deleting the records, and
+writing the contents of selected PMIDs into flat\-files.
+.SH SYNOPSIS
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+medic [options] CMD FILE|PMID...
+
+medic parse baseline/medline*.xml.gz
+medic \-\-update parse update/medline*.xml.gz
+medic \-\-pmid\-lists delete delete.txt
+medic \-\-url sqlite://tmp.db insert pubmed.xml
+medic \-\-pmid\-lists update changed_pmids.txt
+medic \-\-all update pubmed.xml
+medic \-\-format html \-\-output /var/www/medline.html write 2874014 1028734 1298474
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.SH SETUP
+.sp
+If you are \fBnot\fP using \fBpip install medic\fP, install all
+dependencies/requirements:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+pip install sqlalchemy
+# only if using python3 < 3.2:
+pip install argparse
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Install the DB drive you prefer to use (supported are PostgreSQL
+and SQLite):
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+pip install psycopg2
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Create the PostreSQL database:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+createdb medline
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+If you are fine working with SQLite, you only need to use the path to the
+SQLite DB file in the URL option:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+medic insert \-\-url sqlite:///tmp.db 123456
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.SH DESCRIPTION
+.sp
+\fBmedic [options] COMMAND PMID|FILE...\fP
+.sp
+The \fB\-\-url URL\fP option represents the DSN of the database and might
+be needed (default: \fBpostgresql://localhost/medline\fP); For example:
+.INDENT 0.0
+.TP
+.B PostgreSQL
+\fBpostgresql://host//dbname\fP
+.TP
+.B SQLite DB
+\fBsqlite:////absolute/path/to/foo.db\fP or
+\fBsqlite:///relative/path/to/foo.db\fP
+.UNINDENT
+.sp
+The five \fBCOMMAND\fP arguments:
+.INDENT 0.0
+.TP
+.B \fBinsert\fP
+Create records in the DB by parsing MEDLINE XML files or
+by downloading PubMed XML from NCBI eUtils for a list of PMIDs.
+.TP
+.B \fBwrite\fP
+Write records as plaintext files to a directory, each file named as
+"<pmid>.txt", and containing most of the DB stored content or just the
+TIAB (title and abstract). In addition, a single file in TSV or HTML
+format can be generated (see option \fB\-\-format\fP).
+.TP
+.B \fBupdate\fP
+Insert or update records in the DB (instead of creating them); note that
+if a record exists, but is added with \fBcreate\fP, this would throw an
+\fIIntegrityError\fP\&. If you are not sure if the records are in the DB or
+not, use \fBupdate\fP (N.B. that \fBupdate\fP is slower).
+.TP
+.B \fBdelete\fP
+Delete records from the DB for a list of PMIDs (use \fB\-\-pmid\-lists\fP!)
+.TP
+.B \fBparse\fP
+Does not interact with the DB, but rather creates ".tab" files for each
+table that later can be used to load a database, particularly useful when
+bootstrapping a large collection.
+.UNINDENT
+.sp
+For example, to download two PubMed records by PMID and update them in
+the DB:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+medic update 100000 123456
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Add a single MEDLINE or PubMed XML file to the database:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+medic insert pudmed.xml
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Export a few records from the database as HTML (to STDOUT):
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+medic write \-\-format html 292837491 128374 213487
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Note that if the suffix ".gz" is present, the parser automatically
+decompresses the XML file(s) first. This feature \fIonly\fP works with
+GNU\-zipped files and the ".gz" suffix must be present.
+.sp
+Therefore, command line arguments are treated as follows:
+.INDENT 0.0
+.TP
+.B integer values
+are always treated as PMIDs to download PubMed XML data
+.TP
+.B all other values
+are always treated as MEDLINE XML files to parse
+\fBunless\fP you use the option \fB\-\-pmid\-lists\fP
+.TP
+.B files ending in ".gz"
+are always treated as gzipped MEDLINE XML files
+.UNINDENT
+.SH REQUIREMENTS
+.INDENT 0.0
+.IP \(bu 2
+Python 3.2+
+.IP \(bu 2
+SQL Alchewy 0.8+
+.IP \(bu 2
+PostgreSQL 8.4+ or SQLite 3.7+
+.UNINDENT
+.sp
+\fINote\fP that while any SQL Alchemy DB might work, it is \fBstrongly\fP discouraged
+to use any other combination that PostgeSQL and psycogp2 or SQLite and the
+Python STDLIB drivers, because it has not been tested.
+.SH LOAD MEDLINE
+.sp
+Please be aware that the MEDLINE distribution \fBis not unique\fP, meaning that
+it contains a few records multiple times (see the section about
+\fBVersion IDs\fP).
+.sp
+Parsing and loading the baseline into a PostgreSQL DB on the same machine:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+medic parse baseline/medline14n*.xml.gz
+
+for table in records descriptors qualifiers authors \e
+sections databases identifiers chemicals;
+  do psql medline \-c "COPY $table FROM \(aq\(gapwd\(ga/${table}.tab\(aq;";
+done
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+For the update files, you need to go \fIone\-by\-one\fP, adding each one \fIin order\fP,
+and using the flag \fB\-\-update\fP when parsing the XML. After parsing an XML file
+and \fIbefore\fP loading the dump, run \fBmedic delete \-\-pmid\-lists delete.txt\fP
+to get rid of all entities that will be updated or should be removed (PMIDs
+listed as \fBDeleteCitation\fPs):
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+# parse an update file:
+medic parse \-\-update medline14n1234.xml.gz
+
+# delete updated and DeleteCitation records:
+medic \-\-pmid\-lists delete delete.txt
+
+# load all tables; see below, loading baseline:
+for table in records descriptors qualifiers authors \e
+sections databases identifiers chemicals;
+  do psql medline \-c "COPY $table FROM \(aq\(gapwd\(ga/${table}.tab\(aq;";
+done
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.SH VERSION IDS
+.sp
+MEDLINE has began to use versions to allow publishers to add multiple citations
+for the same PMID. This only occurs with 71 articles from one journal,
+"PLOS Curr", in the 2013 baseline, creating a total of 149 non\-unique records.
+.sp
+As this is the only journal and as there should only be one abstract per
+publication in the database, alternative versions are currently being ignored.
+In other words, if a MedlineCitation has a VersionID value, that records can
+be skipped to avoid DB errors from non\-unique records.
+.sp
+For example, in the 2013 baseline, PMID 20029614 is present ten times in the
+baseline, each version at a different stage of revision. Because it is the
+first entry (in the order they appear in the baseline files) without a
+\fBVersionID\fP or a version of "1" that so far is the relevant record,
+\fBmedic\fP by default filters citations with other versions than "1". If you
+do want to process other versions of a citation, use the option \fB\-\-all\fP\&.
+.sp
+In short, this tool by default \fBremoves\fP alternate citations.
+.SH DATABASE ER MODEL
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+[Author] → [Medline] ← [Descriptor] ← [Qualifier]
+            ↑     ↑
+  [Identifier]   [Section]  [Database]  [Chemical]
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B Medline (records)
+\fBpmid\fP:BIGINT, \fIstatus\fP:ENUM(state), \fIjournal\fP:VARCHAR(256),
+\fIcreated\fP:DATE, completed:DATE, revised:DATE, modified:DATE
+.TP
+.B Author (authors)
+\fBpmid\fP:FK(Medline), \fBpos\fP:SMALLINT, \fIname\fP:TEXT,
+initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),
+.TP
+.B Descriptor (descriptors)
+\fBpmid\fP:FK(Medline), \fBpos\fP:SMALLINT, \fIname\fP:TEXT, major:BOOL
+.TP
+.B Qualifier (qualifiers)
+\fBpmid\fP:FK(Descriptor), \fBpos\fP:FK(Descriptor), \fBsub\fP:SMALLINT,
+\fIname\fP:TEXT, major:BOOL
+.TP
+.B Identifier (identifiers)
+\fBpmid\fP:FK(Medline), \fBnamespace\fP:VARCHAR(32), \fIvalue\fP:VARCHAR(256)
+.TP
+.B Database (databases)
+\fBpmid\fP:FK(Medline), \fBname\fP:VARCHAR(32), \fBaccession\fP:VARCHAR(256)
+.TP
+.B Chemical (chemicals)
+\fBpmid\fP:FK(Medline), \fBnum\fP:VARCHAR(32), uid:VARCHAR(256), \fIname\fP:VARCHAR(256)
+.TP
+.B Section (sections)
+\fBpmid\fP:FK(Medline), \fBseq\fP:SMALLINT, \fIname\fP:ENUM(section),
+label:VARCHAR(256), \fIcontent\fP:TEXT
+.UNINDENT
+.INDENT 0.0
+.IP \(bu 2
+\fBbold\fP (Composite) Primary Key
+.IP \(bu 2
+\fIitalic\fP NOT NULL (Strings that may not be NULL are also never empty.)
+.UNINDENT
+.SH SUPPORTED XML ELEMENTS
+.SS Entities
+.INDENT 0.0
+.IP \(bu 2
+The citation (\fBMedline\fP and \fBIdentifier\fP)
+.IP \(bu 2
+Title, Abstract, and Copyright (\fBSection\fP)
+.IP \(bu 2
+Author (\fBAuthor\fP)
+.IP \(bu 2
+Chemical (\fBChemcial\fP)
+.IP \(bu 2
+DataBank (\fBDatabase\fP)
+.IP \(bu 2
+MeshHeading (\fBDescriptor\fP and \fBQualifier\fP)
+.IP \(bu 2
+DeleteCitation (for deleting records when parsing updates)
+.UNINDENT
+.SS Fields/Values
+.INDENT 0.0
+.IP \(bu 2
+AbstractText (\fBSection.name\fP "Abstract" or the \fINlmCategory\fP, \fBSection.content\fP with \fILabel\fP as \fBSection.label\fP)
+.IP \(bu 2
+AccessionNumber (\fBDatabase.accession\fP)
+.IP \(bu 2
+ArticleId (\fBIdentifier.value\fP with \fIIdType\fP as \fBIdentifier.namesapce\fP; only available in online PubMed XML)
+.IP \(bu 2
+ArticleTitle (\fBSection.name\fP "Title", \fBSection.content\fP)
+.IP \(bu 2
+CollectiveName (\fBAuthor.name\fP)
+.IP \(bu 2
+CopyrightInformation (\fBSection.name\fP "Copyright", \fBSection.content\fP)
+.IP \(bu 2
+DataBankName (\fBDatabase.name\fP)
+.IP \(bu 2
+DateCompleted (\fBMedline.completed\fP)
+.IP \(bu 2
+DateCreated (\fBMedline.created\fP)
+.IP \(bu 2
+DateRevised (\fBMedline.revised\fP)
+.IP \(bu 2
+DescriptorName (\fBDescriptor.name\fP with \fIMajorTopicYN\fP as \fBDescriptor.major\fP)
+.IP \(bu 2
+ELocationID (\fBIdentifier.value\fP with \fIEIdType\fP as \fBIdentifier.namespace\fP)
+.IP \(bu 2
+ForeName (\fBAuthor.forename\fP)
+.IP \(bu 2
+Initials (\fBAuthor.initials\fP)
+.IP \(bu 2
+LastName (\fBAuthor.name\fP)
+.IP \(bu 2
+MedlineCitation (only \fIStatus\fP as \fBMedline.status\fP)
+.IP \(bu 2
+MedlineTA (\fBMedline.journal\fP)
+.IP \(bu 2
+NameOfSubstance (\fBChemcial.name\fP)
+.IP \(bu 2
+OtherID (\fBIdentifier.value\fP iff \fISource\fP is "PMC" with \fBIdentifier.namespace\fP as "pmc")
+.IP \(bu 2
+PMID (\fBMedline.pmid\fP)
+.IP \(bu 2
+QualifierName (\fBQualifier.name\fP with \fIMajorTopicYN\fP as \fBQualifier.major\fP)
+.IP \(bu 2
+RegistryNumber (\fBChemical.uid\fP)
+.IP \(bu 2
+Suffix (\fBAuthor.suffix\fP)
+.IP \(bu 2
+VernacularTitle (\fBSection.name\fP "Vernacular", \fBSection.content\fP)
+.UNINDENT
+.SH VERSION HISTORY
+.INDENT 0.0
+.TP
+.B 1.1.0
+.INDENT 7.0
+.IP \(bu 2
+\fB\-\-update parse\fP now writes a file to use with \fB\-\-pmid\-lists delete\fP
+.IP \(bu 2
+fixed an ORM mapping issue with SQLite
+.UNINDENT
+.TP
+.B 1.0.2
+.INDENT 7.0
+.IP \(bu 2
+fixes to make the PyPi version and \fBpip install medic\fP work
+.UNINDENT
+.TP
+.B 1.0.1
+.INDENT 7.0
+.IP \(bu 2
+updates to the setup.py and README.rst files
+.UNINDENT
+.TP
+.B 1.0.0
+.INDENT 7.0
+.IP \(bu 2
+initial release
+.UNINDENT
+.UNINDENT
+.SH COPYRIGHT AND LICENSE
+.sp
+License: \fI\%GNU GPL v3\fP\&.
+Copryright 2012, 2013 Florian Leitner. All rights reserved.
+.\" Generated by docutils manpage writer.
+.
