@@ -7,12 +7,14 @@
 """
 import logging
 
+from functools import partial
 from itertools import chain
 from gzip import open as gunzip
 from os import remove
 from os.path import join
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from sqlalchemy.orm import Session
+from types import GeneratorType
 
 from medic.orm import *
 from medic.parser import MedlineXMLParser, PubMedXMLParser, Parser
@@ -32,7 +34,7 @@ def update(session: Session, files_or_pmids: iter, uniq: bool) -> bool:
 
 
 def select(session: Session, pmids: list([int])) -> iter([Medline]):
-    "Return an iterator over all `Medline` records for the *PMIDs*."
+    "Return an iterator over all `Medline` records for a list of *PMIDs*."
     count = 0
     # noinspection PyUnresolvedReferences
     for record in session.query(Medline).filter(Medline.pmid.in_(pmids)):
@@ -43,7 +45,7 @@ def select(session: Session, pmids: list([int])) -> iter([Medline]):
 
 # noinspection PyUnusedLocal
 def delete(session: Session, pmids: list([int])) -> bool:
-    "Delete all records for the *PMIDs*."
+    "Delete all records for a list of *PMIDs*."
     # noinspection PyUnresolvedReferences
     count = session.query(Medline).filter(Medline.pmid.in_(pmids)).delete(
         synchronize_session=False
@@ -54,7 +56,18 @@ def delete(session: Session, pmids: list([int])) -> bool:
 
 
 def dump(files: iter, output_dir: str, unique: bool, update: bool):
-    "Parse MEDLINE XML files into tabular flat-files for each DB table."
+    """
+    Parse MEDLINE XML files into tabular flat-files for each DB table.
+
+    In addtion, a ``delete.txt`` file is generated, containing the PMIDs
+    that should first be deleted from the DB before copying the dump.
+
+    :param files: a list of XML files to parse (optionally, gzipped)
+    :param output_dir: path to the output directory for the dump
+    :param unique: if ``True`` only VersionId == "1" records are dumped
+    :param update: if ``True`` the PMIDs of all parsed records are
+                   added to the list of PMIDs for deletion
+    """
     out_stream = {
         Medline.__tablename__: open(join(output_dir, "records.tab"), "wt"),
         Section.__tablename__: open(join(output_dir, "sections.tab"), "wt"),
@@ -64,7 +77,7 @@ def dump(files: iter, output_dir: str, unique: bool, update: bool):
         Identifier.__tablename__: open(join(output_dir, "identifiers.tab"), "wt"),
         Database.__tablename__: open(join(output_dir, "databases.tab"), "wt"),
         Chemical.__tablename__: open(join(output_dir, "chemicals.tab"), "wt"),
-        'delete': open(join(output_dir, "delete.sql"), "wt"),
+        'delete': open(join(output_dir, "delete.txt"), "wt"),
     }
     count = 0
     parser = MedlineXMLParser(unique)
@@ -78,9 +91,6 @@ def dump(files: iter, output_dir: str, unique: bool, update: bool):
             in_stream = open(f)
 
         count += _dump(in_stream, out_stream, parser, update)
-
-    if out_stream['delete'].tell() != 0:
-        out_stream['delete'].write('0));')
 
     for stream in out_stream.values():
         if stream.tell() == 0:
@@ -98,7 +108,7 @@ def _dump(in_stream, out_stream: dict, parser: Parser, update: bool) -> int:
 
     for i in parser.parse(in_stream):
         if type(i) == int:
-            _delete(out_stream['delete'], i)
+            print(i, file=out_stream['delete'])
         else:
             out_stream[i.__tablename__].write(str(i))
 
@@ -106,21 +116,12 @@ def _dump(in_stream, out_stream: dict, parser: Parser, update: bool) -> int:
                 count += 1
 
                 if update:
-                    _delete(out_stream['delete'], i.pmid)
+                    print(i.pmid, file=out_stream['delete'])
 
     return count
 
 
-def _delete(stream, pmid):
-    if stream.tell() == 0:
-        stream.write('DELETE FROM {} WHERE pmid = ANY (VALUES ('.format(
-            Medline.__tablename__
-        ))
-    stream.write(str(pmid))
-    stream.write('), (')
-
-
-def _add(session: Session, files_or_pmids: iter, dbHandle, unique=True):
+def _add(session: Session, files_or_pmids: iter, dbHandle, unique: bool=True):
     pmids = []
     count = 0
     initial = session.query(Medline).count() if logger.isEnabledFor(logging.INFO) else 0
@@ -131,10 +132,10 @@ def _add(session: Session, files_or_pmids: iter, dbHandle, unique=True):
                 pmids.append(int(arg))
             except ValueError:
                 logger.info("parsing %s", arg)
-                count += _streamInstances(session, _fromFile(arg, unique), dbHandle)
+                count += _streamInstances(session, dbHandle, _fromFile(arg, unique))
 
         if len(pmids):
-            count += _downloadAll(session, pmids, unique, dbHandle)
+            count += _downloadAll(session, dbHandle, pmids, unique)
 
         session.commit()
 
@@ -154,7 +155,16 @@ def _add(session: Session, files_or_pmids: iter, dbHandle, unique=True):
         return False
 
 
-def _streamInstances(session: Session, stream: iter, handle) -> int:
+def _streamInstances(session: Session, handle, stream: iter) -> int:
+    """
+    Stream citations and delete records in DB.
+
+    If PMIDs (integers) are encountered on the stream, they are deleted after
+    all citations have been handled.
+
+    :param session: the DB session object (SQL Alchemy)
+    :param handle: a DB handle to send ORM instances
+    """
     count = 0
     deletion = []
 
@@ -167,37 +177,65 @@ def _streamInstances(session: Session, stream: iter, handle) -> int:
     if deletion:
         delete(session, deletion)
 
+    logging.debug("streamed %i citations", count)
     return count
 
 
-def _collectCitation(stream: iter) -> list:
-    buffer = []
+def _collectCitation(stream: iter) -> iter:
+    "Collect PMIDs or whole citation lists from the stream."
+    citation = []
+    pmid = None
 
     for instance in stream:
         if type(instance) == int:
+            logger.debug("delete PMID %i", instance)
             yield instance
         else:
-            buffer.append(instance)
+            if instance.pmid != pmid:
+                if citation:
+                    yield citation
+                    citation.clear()
 
-            if isinstance(instance, Medline):
-                yield buffer
+                pmid = instance.pmid
+                logger.debug("collecting PMID %i", pmid)
 
-    if len(buffer):
-        yield buffer
+            citation.append(instance)
+
+    if len(citation):
+        yield citation
 
 
 def _handleCitation(handle, instances: list):
+    "Handle a list of instances representing a citation."
+    # handle Medline first:
+    for idx in range(len(instances)):
+        if isinstance(instances[idx], Medline):
+            handle(instances.pop(idx))
+            break
+
+    # and everythin else after that:
     while instances:
         handle(instances.pop())
 
     return 1
 
 
-def _downloadAll(session: Session, pmids: list, unique: bool, handle) -> int:
+def _downloadAll(session: Session, dbHandle, pmids: list, unique: bool=True) -> int:
+    """
+    Download PubMed XML for a list of PMIDs (integers), parse the streams,
+    and send the ORM instances to a DB handle.
+
+    :param session: the SQL Alchemy DB session
+    :param dbHandle: a function that takes one instance and sends it to the DB
+    :param pmids: the list of PMIDs to download
+    :param unique: if ``True``, only VersionID == "1" records are handled.
+    """
     parser = PubMedXMLParser(unique)
-    downloads = map(Download, [pmids[100 * i:100 * i + 100] for i in range(len(pmids) % 100)])
-    streams = map(parser.parse, downloads)
-    return _streamInstances(session, chain(streams), handle)
+    pmid_sets = [ pmids[100 * i:100 * i + 100] for i in range(len(pmids) // 100 + 1) ]
+    downloads = map(Download, pmid_sets)
+    instances = map(parser.parse, downloads)
+    streaming = partial(_streamInstances, session, dbHandle)
+    return sum(map(streaming, chain(instances)))
 
 
 def _fromFile(name: str, unique: bool) -> iter:
