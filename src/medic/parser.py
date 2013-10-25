@@ -7,6 +7,7 @@
 """
 import logging
 import re
+import struct
 import types
 
 from xml.etree.ElementTree import iterparse
@@ -72,12 +73,15 @@ class Parser:
         return State.PARSING == self._state
 
     def parse(self, xml_stream):
-        for event, element in iterparse(xml_stream, self.events):
-            if event == 'start':
-                self.startElement(element)
-            else:
-                for instance in self.yieldInstances(element):
-                    yield instance
+        try:
+            for event, element in iterparse(xml_stream, self.events):
+                if event == 'start':
+                    self.startElement(element)
+                else:
+                    for instance in self.yieldInstances(element):
+                        yield instance
+        except struct.error:
+            logger.exception('compressed gzip file is corrupt')
 
     def startElement(self, element):
         if self.unique and element.tag == 'MedlineCitation':
