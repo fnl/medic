@@ -100,7 +100,6 @@ def dump(files: iter, output_dir: str, unique: bool, update: bool):
 
 
 def _dump(in_stream, out_stream: dict, parser: Parser, update: bool) -> int:
-    logger.info('dumping %s', in_stream.name)
     count = 0
 
     for i in parser.parse(in_stream):
