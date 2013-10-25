@@ -28,6 +28,9 @@ setup(
     scripts=[
         'scripts/medic',
     ],
+    data_files=[
+        ('/usr/local/share/man/man1', ['medic.1']),
+    ],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',
