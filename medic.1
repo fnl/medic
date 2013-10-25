@@ -31,7 +31,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
 .sp
-A tool to parse MEDLINE XML files or
+The Swiss Army knife to parse MEDLINE XML files or
 download eUtils\(aq PubMed XML records,
 bootstrapping a MEDLINE/PubMed database,
 updating and/or deleting the records, and
@@ -220,7 +220,7 @@ PostgreSQL 8.4+ or SQLite 3.7+
 \fINote\fP that while any SQL Alchemy DB might work, it is \fBstrongly\fP discouraged
 to use any other combination that PostgeSQL and psycogp2 or SQLite and the
 Python STDLIB drivers, because it has not been tested.
-.SH LOAD MEDLINE
+.SH LOADING MEDLINE
 .sp
 Please be aware that the MEDLINE distribution \fBis not unique\fP, meaning that
 it contains a few records multiple times (see the section about
@@ -253,8 +253,8 @@ listed as \fBDeleteCitation\fPs):
 .sp
 .nf
 .ft C
-# parse an update file:
-medic parse \-\-update medline14n1234.xml.gz
+# parse a MEDLINE update file:
+medic \-\-update parse medline14n1234.xml.gz
 
 # delete updated and DeleteCitation records:
 medic \-\-pmid\-lists delete delete.txt
@@ -413,7 +413,9 @@ VernacularTitle (\fBSection.name\fP "Vernacular", \fBSection.content\fP)
 .IP \(bu 2
 \fB\-\-update parse\fP now writes a file to use with \fB\-\-pmid\-lists delete\fP
 .IP \(bu 2
-fixed an ORM mapping issue with SQLite
+fixed a bug with CRUD manager
+.IP \(bu 2
+added a man page
 .UNINDENT
 .TP
 .B 1.0.2

@@ -146,8 +146,8 @@ and *before* loading the dump, run ``medic delete --pmid-lists delete.txt``
 to get rid of all entities that will be updated or should be removed (PMIDs
 listed as ``DeleteCitation``\ s)::
 
-  # parse an update file:
-  medic parse --update medline14n1234.xml.gz
+  # parse a MEDLINE update file:
+  medic --update parse medline14n1234.xml.gz
 
   # delete updated and DeleteCitation records:
   medic --pmid-lists delete delete.txt
