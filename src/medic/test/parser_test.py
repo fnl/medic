@@ -5,7 +5,7 @@ from sqlalchemy.engine.url import URL
 from datetime import date
 
 from medic import orm
-from medic.parser import *
+from medic.parser import MedlineXMLParser, PubMedXMLParser
 
 __author__ = 'Florian Leitner'
 

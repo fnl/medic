@@ -264,6 +264,8 @@ Fields/Values
 Version History
 ===============
 
+1.1.1
+  - code cleanup (PEP8, PyFlake)
 1.1.0
   - ``--update parse`` now writes a file to use with ``--pmid-lists delete``
   - fixed a bug with CRUD manager

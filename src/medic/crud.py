@@ -14,9 +14,9 @@ from os import remove
 from os.path import join
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from sqlalchemy.orm import Session
-from types import GeneratorType
 
-from medic.orm import *
+from medic.orm import \
+        Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, Chemical
 from medic.parser import MedlineXMLParser, PubMedXMLParser, Parser
 from medic.web import Download
 
@@ -36,17 +36,14 @@ def update(session: Session, files_or_pmids: iter, uniq: bool) -> bool:
 def select(session: Session, pmids: list([int])) -> iter([Medline]):
     "Return an iterator over all `Medline` records for a list of *PMIDs*."
     count = 0
-    # noinspection PyUnresolvedReferences
     for record in session.query(Medline).filter(Medline.pmid.in_(pmids)):
         count += 1
         yield record
     logger.info("retrieved %i records", count)
 
 
-# noinspection PyUnusedLocal
 def delete(session: Session, pmids: list([int])) -> bool:
     "Delete all records for a list of *PMIDs*."
-    # noinspection PyUnresolvedReferences
     count = session.query(Medline).filter(Medline.pmid.in_(pmids)).delete(
         synchronize_session=False
     )
@@ -231,7 +228,7 @@ def _downloadAll(session: Session, dbHandle, pmids: list, unique: bool=True) -> 
     :param unique: if ``True``, only VersionID == "1" records are handled.
     """
     parser = PubMedXMLParser(unique)
-    pmid_sets = [ pmids[100 * i:100 * i + 100] for i in range(len(pmids) // 100 + 1) ]
+    pmid_sets = [pmids[100 * i:100 * i + 100] for i in range(len(pmids) // 100 + 1)]
     downloads = map(Download, pmid_sets)
     instances = map(parser.parse, downloads)
     streaming = partial(_streamInstances, session, dbHandle)
@@ -251,5 +248,3 @@ def _openFile(name):
         return gunzip(name, 'rb')
     else:
         return open(name)
-
-

@@ -6,18 +6,20 @@
 .. License: GNU Affero GPL v3 (http://www.gnu.org/licenses/agpl.html)
 """
 import logging
+import re
 import types
+
 from xml.etree.ElementTree import iterparse
 from datetime import date
 
-import re
-from medic.orm import *
+from medic.orm import \
+        Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, Chemical
 
 __all__ = ['MedlineXMLParser', 'PubMedXMLParser']
 
+# translate three-letter month strings to integers:
 MONTHS_SHORT = (None, 'jan', 'feb', 'mar', 'apr', 'may', 'jun',
                 'jul', 'aug', 'sep', 'oct', 'nov', 'dec')
-# to translate three-letter month strings to integers
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +39,8 @@ class Parser:
 
         :param unique: if `True`, citations with VersionID != "1" are skipped
         """
-        logger.info('configuring a %sunique %s', "" if unique else "non-", self.__class__.__name__)
+        logger.info('configuring a %sunique %s',
+                    "" if unique else "non-", self.__class__.__name__)
         self.unique = unique
         self.events = ('start', 'end') if unique else None
         logger.debug('state: UNDEFINED')
@@ -81,7 +84,8 @@ class Parser:
             version = element.get('VersionID')
 
             if version is not None and version.strip() != "1":
-                logger.info('detected a citation with VersionID "%s"', version)
+                logger.info('detected a citation with VersionID "%s"',
+                            version)
                 self.skipping()
 
     def yieldInstances(self, element):
@@ -193,7 +197,8 @@ class MedlineXMLParser(Parser):
             self.pos += 1
             return Author(self.pmid, self.pos, name, initials, forename, suffix)
         else:
-            logger.warning('empty or missing Author/LastName or CollectiveName in %i', self.pmid)
+            logger.warning('empty or missing Author/LastName or CollectiveName in %i',
+                           self.pmid)
             return None
 
     def parseAuthorElements(self, children):
@@ -220,7 +225,8 @@ class MedlineXMLParser(Parser):
                 elif child.tag == 'Affiliation':
                     pass
                 else:
-                    logger.warning('unknown Author element %s "%s" in %i', child.tag, text, self.pmid)
+                    logger.warning('unknown Author element %s "%s" in %i',
+                                   child.tag, text, self.pmid)
             else:
                 logger.warning('empty Author element %s in %i"', child.tag, self.pmid)
 
@@ -318,7 +324,8 @@ class PubMedXMLParser(MedlineXMLParser):
         text = element.text.strip()
 
         if ns in self.namespaces:
-            if re.match('\d[\d\.]+/.+', element.text.strip()) and 'doi' not in self.namespaces:
+            if re.match('\d[\d\.]+/.+', element.text.strip()) and \
+                    'doi' not in self.namespaces:
                 self.namespaces.add('doi')
                 instance = Identifier(self.pmid, 'doi', text)
             else:

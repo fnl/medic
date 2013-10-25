@@ -5,7 +5,8 @@ from datetime import date
 from io import StringIO
 from tempfile import TemporaryFile
 
-from medic.orm import *
+from medic.orm import \
+        Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, Chemical
 from medic.crud import _dump
 
 DATA = [
@@ -21,6 +22,7 @@ DATA = [
     Chemical(1, 1, 'uid', 'name'),
     Medline(1, 'MEDLINE', 'journal', date.today()),
 ]
+
 
 class ParserMock:
     def __init__(self, instances):

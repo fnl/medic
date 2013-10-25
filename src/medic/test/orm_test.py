@@ -5,8 +5,8 @@ from unittest import main, TestCase
 
 from sqlalchemy.exc import IntegrityError, StatementError
 
-from medic.orm import InitDb, Session, Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, Chemical
-
+from medic.orm import InitDb, Session, \
+        Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, Chemical
 
 __author__ = 'Florian Leitner'
 
@@ -928,7 +928,6 @@ class ChemicalTest(TestCase):
         self.sess.add(i)
         self.sess.commit()
         self.assertEqual(self.M, i.medline)
-
 
 
 if __name__ == '__main__':
