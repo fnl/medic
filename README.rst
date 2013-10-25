@@ -1,17 +1,186 @@
-#####
-MEDIC
-#####
+=====
+medic
+=====
+------------------------------------------------------
+a command-line tool to maintain a DB mirror of MEDLINE
+------------------------------------------------------
+
+The Swiss Army knife to parse MEDLINE XML files or
+download eUtils' PubMed XML records,
+bootstrapping a MEDLINE/PubMed database,
+updating and/or deleting the records, and
+writing the contents of selected PMIDs into flat-files.
 
 Synopsis
 ========
 
-A tool to parse MEDLINE XML files or download eUtils' PubMed XML,
-bootstrapping a MEDLINE/PubMed database store,
-updating and/or deleting the records, and
-writing the contents of selected PMIDs into flat-files.
+::
 
-Entity Relationship Model
-=========================
+  medic [options] CMD FILE|PMID...
+
+  medic parse baseline/medline*.xml.gz
+  medic --update parse update/medline*.xml.gz
+  medic --pmid-lists delete delete.txt
+  medic --url sqlite://tmp.db insert pubmed.xml
+  medic --pmid-lists update changed_pmids.txt
+  medic --all update pubmed.xml
+  medic --format html --output /var/www/medline.html write 2874014 1028734 1298474
+
+Setup
+=====
+
+If you are **not** using ``pip install medic``, install all
+dependencies/requirements::
+
+  pip install sqlalchemy
+  # only if using python3 < 3.2:
+  pip install argparse 
+
+Install the DB drive you prefer to use (supported are PostgreSQL
+and SQLite)::
+
+  pip install psycopg2 
+
+Create the PostreSQL database::
+
+  createdb medline 
+
+If you are fine working with SQLite, you only need to use the path to the
+SQLite DB file in the URL option::
+
+  medic insert --url sqlite:///tmp.db 123456
+
+Description
+===========
+
+``medic [options] COMMAND PMID|FILE...``
+
+The ``--url URL`` option represents the DSN of the database and might
+be needed (default: ``postgresql://localhost/medline``); For example:
+
+PostgreSQL
+  ``postgresql://host//dbname``
+SQLite DB
+  ``sqlite:////absolute/path/to/foo.db`` or
+  ``sqlite:///relative/path/to/foo.db``
+
+The five **COMMAND** arguments:
+
+``insert``
+  Create records in the DB by parsing MEDLINE XML files or
+  by downloading PubMed XML from NCBI eUtils for a list of PMIDs.
+``write``
+  Write records as plaintext files to a directory, each file named as
+  "<pmid>.txt", and containing most of the DB stored content or just the
+  TIAB (title and abstract). In addition, a single file in TSV or HTML
+  format can be generated (see option ``--format``).
+``update``
+  Insert or update records in the DB (instead of creating them); note that
+  if a record exists, but is added with ``create``, this would throw an
+  `IntegrityError`. If you are not sure if the records are in the DB or
+  not, use ``update`` (N.B. that ``update`` is slower).
+``delete``
+  Delete records from the DB for a list of PMIDs (use ``--pmid-lists``!)
+``parse``
+  Does not interact with the DB, but rather creates ".tab" files for each
+  table that later can be used to load a database, particularly useful when
+  bootstrapping a large collection.
+
+For example, to download two PubMed records by PMID and update them in
+the DB::
+
+  medic update 100000 123456
+
+Add a single MEDLINE or PubMed XML file to the database::
+
+  medic insert pudmed.xml
+
+Export a few records from the database as HTML (to STDOUT)::
+
+  medic write --format html 292837491 128374 213487
+
+Note that if the suffix ".gz" is present, the parser automatically
+decompresses the XML file(s) first. This feature *only* works with
+GNU-zipped files and the ".gz" suffix must be present.
+
+Therefore, command line arguments are treated as follows:
+
+integer values
+  are always treated as PMIDs to download PubMed XML data
+all other values
+  are always treated as MEDLINE XML files to parse
+  **unless** you use the option ``--pmid-lists``
+files ending in ".gz"
+  are always treated as gzipped MEDLINE XML files
+
+Requirements
+============
+
+- Python 3.2+
+- SQL Alchewy 0.8+
+- PostgreSQL 8.4+ or SQLite 3.7+
+
+*Note* that while any SQL Alchemy DB might work, it is **strongly** discouraged
+to use any other combination that PostgeSQL and psycogp2 or SQLite and the
+Python STDLIB drivers, because it has not been tested.
+
+Loading MEDLINE
+===============
+
+Please be aware that the MEDLINE distribution **is not unique**, meaning that
+it contains a few records multiple times (see the section about
+**Version IDs**).
+
+Parsing and loading the baseline into a PostgreSQL DB on the same machine::
+
+  medic parse baseline/medline14n*.xml.gz
+
+  for table in records descriptors qualifiers authors \
+  sections databases identifiers chemicals;
+    do psql medline -c "COPY $table FROM '`pwd`/${table}.tab';";
+  done
+
+For the update files, you need to go *one-by-one*, adding each one *in order*,
+and using the flag ``--update`` when parsing the XML. After parsing an XML file
+and *before* loading the dump, run ``medic delete --pmid-lists delete.txt``
+to get rid of all entities that will be updated or should be removed (PMIDs
+listed as ``DeleteCitation``\ s)::
+
+  # parse an update file:
+  medic parse --update medline14n1234.xml.gz
+
+  # delete updated and DeleteCitation records:
+  medic --pmid-lists delete delete.txt
+
+  # load all tables; see below, loading baseline:
+  for table in records descriptors qualifiers authors \
+  sections databases identifiers chemicals; 
+    do psql medline -c "COPY $table FROM '`pwd`/${table}.tab';";
+  done
+
+Version IDs
+===========
+
+MEDLINE has began to use versions to allow publishers to add multiple citations
+for the same PMID. This only occurs with 71 articles from one journal,
+"PLOS Curr", in the 2013 baseline, creating a total of 149 non-unique records.
+
+As this is the only journal and as there should only be one abstract per
+publication in the database, alternative versions are currently being ignored.
+In other words, if a MedlineCitation has a VersionID value, that records can
+be skipped to avoid DB errors from non-unique records.
+
+For example, in the 2013 baseline, PMID 20029614 is present ten times in the
+baseline, each version at a different stage of revision. Because it is the
+first entry (in the order they appear in the baseline files) without a
+``VersionID`` or a version of "1" that so far is the relevant record,
+``medic`` by default filters citations with other versions than "1". If you
+do want to process other versions of a citation, use the option ``--all``.
+
+In short, this tool by default **removes** alternate citations.
+
+Database ER Model
+=================
 
 ::
 
@@ -48,182 +217,68 @@ Section (sections)
   label:VARCHAR(256), *content*:TEXT
 
 - **bold** (Composite) Primary Key
-- *italic* NOT NULL
+- *italic* NOT NULL (Strings that may not be NULL are also never empty.)
 
-Supported PubMed XML Elements
-=============================
+Supported XML Elements
+======================
 
 Entities
 --------
 
-- The citation (`Medline` and `Identifier`)
-- Title, Abstract, and Copyright (`Section`)
-- Author (`Author`)
-- Chemical (`Chemcial`)
-- DataBank (`Database`)
-- MeshHeading (`Descriptor` and `Qualifier`)
+- The citation (``Medline`` and ``Identifier``)
+- Title, Abstract, and Copyright (``Section``)
+- Author (``Author``)
+- Chemical (``Chemcial``)
+- DataBank (``Database``)
+- MeshHeading (``Descriptor`` and ``Qualifier``)
 - DeleteCitation (for deleting records when parsing updates)
 
 Fields/Values
 -------------
 
-- AbstractText (`Section.name` "Abstract" or the ``NlmCategory``, `Section.content` with ``Label`` as `Section.label`)
-- AccessionNumber (`Database.accession`)
-- ArticleId (`Identifier.value` with ``IdType`` as `Identifier.namesapce`; only available in online PubMed XML)
-- ArticleTitle (`Section.name` "Title", `Section.content`)
-- CollectiveName (`Author.name`)
-- CopyrightInformation (`Section.name` "Copyright", `Section.content`)
-- DataBankName (`Database.name`)
-- DateCompleted (`Medline.completed`)
-- DateCreated (`Medline.created`)
-- DateRevised (`Medline.revised`)
-- DescriptorName (`Descriptor.name` with ``MajorTopicYN`` as `Descriptor.major`)
-- ELocationID (`Identifier.value` with ``EIdType`` as `Identifier.namespace`)
-- ForeName (`Author.forename`)
-- Initials (`Author.initials`)
-- LastName (`Author.name`)
-- MedlineCitation (only ``Status`` as `Medline.status`)
-- MedlineTA (`Medline.journal`)
-- NameOfSubstance (`Chemcial.name`)
-- OtherID (`Identifier.value` iff ``Source`` is "PMC" with `Identifier.namespace` as "pmc")
-- PMID (`Medline.pmid`)
-- QualifierName (`Qualifier.name` with ``MajorTopicYN`` as `Qualifier.major`)
-- RegistryNumber (`Chemical.uid`)
-- Suffix (`Author.suffix`)
-- VernacularTitle (`Section.name` "Vernacular", `Section.content`)
+- AbstractText (``Section.name`` "Abstract" or the *NlmCategory*, ``Section.content`` with *Label* as ``Section.label``)
+- AccessionNumber (``Database.accession``)
+- ArticleId (``Identifier.value`` with *IdType* as ``Identifier.namesapce``; only available in online PubMed XML)
+- ArticleTitle (``Section.name`` "Title", ``Section.content``)
+- CollectiveName (``Author.name``)
+- CopyrightInformation (``Section.name`` "Copyright", ``Section.content``)
+- DataBankName (``Database.name``)
+- DateCompleted (``Medline.completed``)
+- DateCreated (``Medline.created``)
+- DateRevised (``Medline.revised``)
+- DescriptorName (``Descriptor.name`` with *MajorTopicYN* as ``Descriptor.major``)
+- ELocationID (``Identifier.value`` with *EIdType* as ``Identifier.namespace``)
+- ForeName (``Author.forename``)
+- Initials (``Author.initials``)
+- LastName (``Author.name``)
+- MedlineCitation (only *Status* as ``Medline.status``)
+- MedlineTA (``Medline.journal``)
+- NameOfSubstance (``Chemcial.name``)
+- OtherID (``Identifier.value`` iff *Source* is "PMC" with ``Identifier.namespace`` as "pmc")
+- PMID (``Medline.pmid``)
+- QualifierName (``Qualifier.name`` with *MajorTopicYN* as ``Qualifier.major``)
+- RegistryNumber (``Chemical.uid``)
+- Suffix (``Author.suffix``)
+- VernacularTitle (``Section.name`` "Vernacular", ``Section.content``)
 
-Requirements
-============
+Version History
+===============
 
-- Python 3.2+
-- SQL Alchemy 0.7+
-- any database SQL Alchemy can work with
+1.1.0
+  - ``--update parse`` now writes a file to use with ``--pmid-lists delete``
+  - fixed a bug with CRUD manager
+  - added a man page
+1.0.2
+  - fixes to make the PyPi version and ``pip install medic`` work
+1.0.1
+  - updates to the setup.py and README.rst files
+1.0.0
+  - initial release
 
-*Note* that while any SQL Alchemy DB will work, it is **strongly** discouraged
-to use any other combination that PostgeSQL and psycogp2, because it is the
-only combination in SQL Alchemy where data streaming from the DB actually
-works. You can use other DBs for small MEDLINE collections, but in general,
-for now, it is recommended to stick to this combo.
+Copyright and License
+=====================
 
-Notice: VersionID
-=================
+License: `GNU GPL v3`_\ .
+Copryright 2012, 2013 Florian Leitner. All rights reserved.
 
-MEDLINE has began to use versions to allow publishers to add multiple citations
-for the same PMID. This only occurs with 71 articles from one journal,
-"PLOS Curr", in the 2013 baseline, creating a total of 149 non-unique records.
-
-As this is the only journal and as there should only be one abstract per
-publication in the database, alternative versions are currently being ignored.
-In other words, if a MedlineCitation has a VersionID value, that records can
-be skipped to avoid DB errors from non-unique records.
-
-In short, this tool currently **only removes** alternate citations.
-
-Setup
-=====
-
-If you are **not** using ``pip install medic``, install all
-dependencies/requirements::
-
-    pip install argparse # only for python3 < 3.2
-    pip install sqlalchemy
-    pip install psycopg2 # optional, can use any other DB driver
-
-Create the PostreSQL database (optional)::
-
-    createdb medline 
-
-Usage
-=====
-
-``medic [options] COMMAND PMID|FILE...``
-
-The ``--url URL`` option represents the DSN of the database and might
-be needed (default: ``postgresql://localhost/medline``); For example:
-
-Postgres
-    ``postgresql://host//dbname``
-SQLite
-    ``sqlite:////absolute/path/to/foo.db`` or
-    ``sqlite:///relative/path/to/foo.db``
-
-The tool has five **COMMAND** options:
-
-``insert``
-    create records in the DB by parsing MEDLINE XML files or
-    by downloading PubMed XML from NCBI eUtils for a list of PMIDs
-``write``
-    write records as plaintext files to a directory, each file named as
-    "<pmid>.txt", and containing most of the DB stored content or just the
-    TIAB (title and abstract). In addition, summary files in TSV and HTML
-    format can be generated (see option ``--format``).
-``update``
-    insert or update records in the DB (instead of creating them); note that
-    if a record exists, but is added with ``create``, this would throw an
-    `IntegrityError`. If you are not sure if the records are in the DB or
-    not, use ``update`` (N.B. that ``update`` is slower).
-``delete``
-    delete records from the DB for a list of PMIDs
-``parse``
-    does not interact with the DB, but rather creates ".tab" files for each
-    table that later can be used to load a database, particularly useful when
-    bootstrapping a large collection
-
-For example, to download two PubMed records by PMID and put them into
-the DB::
-
-    medic update 1000 123456
-
-To add a MEDLINE XML update file to the DB::
-
-    medic parse --update medline14n1234.xml.gz
-    psql medline -f delete.sql
-    # load all tables; see below
-
-Add a single MEDLINE XML file quickly to the database::
-
-    medic insert medline13n0001.xml.gz
-
-Export a few records from the database into a HTML file::
-
-    medic write --format html 292837491 128374 213487
-
-Note that in the above examples, because of the suffix ".gz", the parser
-automatically decompresses the file(s) first. This feature *only* works
-with GNU-zipped files and the ".gz" suffix must be present.
-
-Therefore, command line arguments are treated as follows:
-
-integer values
-    are always treated as PMIDs to download PubMed XML data
-all other values
-    are always treated as MEDLINE XML files to parse
-values ending in ".gz"
-    are always treated as gzipped MEDLINE XML files
-
-Loading the MEDLINE baseline
-============================
-
-Please be aware that the MEDLINE baseline **is not unique**, meaning that it
-contains a few records multiple times (see the above notice about the
-``VersionID`` above).
-
-For example, in the 2013 baseline, PMID 20029614 is present ten times in the
-baseline, each version at a different stage of revision. Because it is the
-first entry (in the order they appear in the baseline files) without a
-``VersionID`` that seems to be the relevant record, it ``medic`` by default
-filters citations with other versions than "1". If you want to actually parse
-other versions of a citation, use the option ``--all``.
-
-To quickly load a parsed dump into a PostgreSQL DB on the same machine, do::
-
-    for table in records descriptors qualifiers authors sections databases \
-    identifiers chemicals;
-      do psql medline -c "COPY $table FROM '`pwd`/${table}.tab';";
-    done
-
-For the update files, you need to go one-by-one, adding them in order, and
-using the flag ``--update`` when parsing the XML. After parsing an XML file
-and *before* loading the dumps, run ``psql medline -f delete.sql`` to get rid
-of all entities that are being updated or should be removed (PMIDs listed as
-``DeleteCitation``\ s).
+.. _GNU GPL v3: http://www.gnu.org/licenses/gpl-3.0.html
