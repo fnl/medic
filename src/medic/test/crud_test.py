@@ -55,7 +55,7 @@ class TestDump(unittest.TestCase):
     def testDumping(self):
         parser = ParserMock(DATA)
         results = defaultdict(str)
-        results['delete'] = "DELETE FROM {} WHERE pmid = ANY (VALUES (1), (".format(
+        results['delete'] = "1\n".format(
             Medline.__tablename__
         )
 
