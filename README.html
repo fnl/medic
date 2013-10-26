@@ -467,7 +467,7 @@ it contains a few records multiple times (see the section about
 medic parse baseline/medline14n*.xml.gz
 
 for table in records descriptors qualifiers authors \
-sections databases identifiers chemicals;
+sections databases identifiers chemicals keywords;
   do psql medline -c &quot;COPY $table FROM '`pwd`/${table}.tab';&quot;;
 done
 </pre>
@@ -485,7 +485,7 @@ medic --pmid-lists delete delete.txt
 
 # load all tables; see below, loading baseline:
 for table in records descriptors qualifiers authors \
-sections databases identifiers chemicals;
+sections databases identifiers chemicals keywords;
   do psql medline -c &quot;COPY $table FROM '`pwd`/${table}.tab';&quot;;
 done
 </pre>
