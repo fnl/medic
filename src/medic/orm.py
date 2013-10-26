@@ -618,7 +618,8 @@ class Keyword(_Base, SelectMixin):
     def __str__(self):
         return '{}\t{}\t{}\t{}\t{}\n'.format(
             NULL(self.pmid), NULL(self.owner), NULL(self.cnt),
-            'T' if self.major else 'F', NULL(self.value)
+            'T' if self.major else 'F',
+            self.value.replace('\\', '\\\\').replace('\t', '\\t').replace('\n', '\\n')
         )
 
     def __repr__(self):
