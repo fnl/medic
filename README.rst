@@ -36,8 +36,8 @@ dependencies/requirements::
   # only if using python3 < 3.2:
   pip install argparse 
 
-Install the DB driver you prefer to use (supported are PostgreSQL
-and SQLite)::
+Install the **DB driver** you prefer to use (supported are PostgreSQL
+and SQLite, with the latter part of the Python StdLib)::
 
   pip install psycopg2 
 
