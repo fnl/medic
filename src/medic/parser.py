@@ -88,8 +88,7 @@ class Parser:
             version = element.get('VersionID')
 
             if version is not None and version.strip() != "1":
-                logger.info('detected a citation with VersionID "%s"',
-                            version)
+                logger.debug('detected a citation with VersionID "%s"', version)
                 self.skipping()
 
     def yieldInstances(self, element):
@@ -177,8 +176,8 @@ class MedlineXMLParser(Parser):
                     self.pmid, self.seq, section, text, element.get('Label', None)
                 )
 
-        logger.info('empty %s AbstractText in %i',
-                    element.get('NlmCategory', 'ABSTRACT'), self.pmid)
+        logger.debug('empty %s AbstractText in %i',
+                     element.get('NlmCategory', 'ABSTRACT'), self.pmid)
         return None
 
     def ArticleTitle(self, element):
