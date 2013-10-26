@@ -295,7 +295,7 @@ In short, this tool by default \fBremoves\fP alternate citations.
 .ft C
 [Author] → [Medline] ← [Descriptor] ← [Qualifier]
             ↑     ↑
-  [Identifier]   [Section]  [Database]  [Chemical]
+  [Identifier]   [Section]  [Database]  [Chemical] [Keyword]
 .ft P
 .fi
 .UNINDENT
@@ -311,11 +311,10 @@ In short, this tool by default \fBremoves\fP alternate citations.
 initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),
 .TP
 .B Descriptor (descriptors)
-\fBpmid\fP:FK(Medline), \fBpos\fP:SMALLINT, \fIname\fP:TEXT, major:BOOL
+\fBpmid\fP:FK(Medline), \fBnum\fP:SMALLINT, major:BOOL, \fIname\fP:TEXT
 .TP
 .B Qualifier (qualifiers)
-\fBpmid\fP:FK(Descriptor), \fBpos\fP:FK(Descriptor), \fBsub\fP:SMALLINT,
-\fIname\fP:TEXT, major:BOOL
+\fBpmid\fP:FK(Descriptor), \fBnum\fP:FK(Descriptor), \fBsub\fP:SMALLINT, major:BOOL, \fIname\fP:TEXT
 .TP
 .B Identifier (identifiers)
 \fBpmid\fP:FK(Medline), \fBnamespace\fP:VARCHAR(32), \fIvalue\fP:VARCHAR(256)
@@ -324,7 +323,10 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),
 \fBpmid\fP:FK(Medline), \fBname\fP:VARCHAR(32), \fBaccession\fP:VARCHAR(256)
 .TP
 .B Chemical (chemicals)
-\fBpmid\fP:FK(Medline), \fBnum\fP:VARCHAR(32), uid:VARCHAR(256), \fIname\fP:VARCHAR(256)
+\fBpmid\fP:FK(Medline), \fBidx\fP:VARCHAR(32), uid:VARCHAR(256), \fIname\fP:VARCHAR(256)
+.TP
+.B Keyword (keywords)
+\fBpmid\fP:FK(Medline), \fBowner\fP:ENUM(owner), \fBcnt\fP:SMALLINT, major:BOOL, \fIvalue\fP:TEXT
 .TP
 .B Section (sections)
 \fBpmid\fP:FK(Medline), \fBseq\fP:SMALLINT, \fIname\fP:ENUM(section),
@@ -349,6 +351,8 @@ Author (\fBAuthor\fP)
 Chemical (\fBChemcial\fP)
 .IP \(bu 2
 DataBank (\fBDatabase\fP)
+.IP \(bu 2
+Keyword (\fBKeyword\fP)
 .IP \(bu 2
 MeshHeading (\fBDescriptor\fP and \fBQualifier\fP)
 .IP \(bu 2
@@ -385,6 +389,8 @@ ForeName (\fBAuthor.forename\fP)
 .IP \(bu 2
 Initials (\fBAuthor.initials\fP)
 .IP \(bu 2
+Keyword (\fBKeyword.value\fP with \fIOwner\fP as \fBKeyword.owner\fP and \fIMajorTopicYN\fP as \fBKeyword.major\fP)
+.IP \(bu 2
 LastName (\fBAuthor.name\fP)
 .IP \(bu 2
 MedlineCitation (only \fIStatus\fP as \fBMedline.status\fP)
@@ -407,6 +413,14 @@ VernacularTitle (\fBSection.name\fP "Vernacular", \fBSection.content\fP)
 .UNINDENT
 .SH VERSION HISTORY
 .INDENT 0.0
+.TP
+.B 1.2.0
+.INDENT 7.0
+.IP \(bu 2
+added support for the new entity Keywords
+.IP \(bu 2
+DB structure change: descriptors.major and qualifiers.major columns swapped
+.UNINDENT
 .TP
 .B 1.1.1
 .INDENT 7.0

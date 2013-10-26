@@ -1,0 +1,637 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.11: http://docutils.sourceforge.net/" />
+<title>medic</title>
+<style type="text/css">
+
+/*
+:Author: David Goodger (goodger@python.org)
+:Id: $Id: html4css1.css 7614 2013-02-21 15:55:51Z milde $
+:Copyright: This stylesheet has been placed in the public domain.
+
+Default cascading style sheet for the HTML output of Docutils.
+
+See http://docutils.sf.net/docs/howto/html-stylesheets.html for how to
+customize this style sheet.
+*/
+
+/* used to remove borders from tables and images */
+.borderless, table.borderless td, table.borderless th {
+  border: 0 }
+
+table.borderless td, table.borderless th {
+  /* Override padding for "table.docutils td" with "! important".
+     The right padding separates the table cells. */
+  padding: 0 0.5em 0 0 ! important }
+
+.first {
+  /* Override more specific margin styles with "! important". */
+  margin-top: 0 ! important }
+
+.last, .with-subtitle {
+  margin-bottom: 0 ! important }
+
+.hidden {
+  display: none }
+
+a.toc-backref {
+  text-decoration: none ;
+  color: black }
+
+blockquote.epigraph {
+  margin: 2em 5em ; }
+
+dl.docutils dd {
+  margin-bottom: 0.5em }
+
+object[type="image/svg+xml"], object[type="application/x-shockwave-flash"] {
+  overflow: hidden;
+}
+
+/* Uncomment (and remove this text!) to get bold-faced definition list terms
+dl.docutils dt {
+  font-weight: bold }
+*/
+
+div.abstract {
+  margin: 2em 5em }
+
+div.abstract p.topic-title {
+  font-weight: bold ;
+  text-align: center }
+
+div.admonition, div.attention, div.caution, div.danger, div.error,
+div.hint, div.important, div.note, div.tip, div.warning {
+  margin: 2em ;
+  border: medium outset ;
+  padding: 1em }
+
+div.admonition p.admonition-title, div.hint p.admonition-title,
+div.important p.admonition-title, div.note p.admonition-title,
+div.tip p.admonition-title {
+  font-weight: bold ;
+  font-family: sans-serif }
+
+div.attention p.admonition-title, div.caution p.admonition-title,
+div.danger p.admonition-title, div.error p.admonition-title,
+div.warning p.admonition-title, .code .error {
+  color: red ;
+  font-weight: bold ;
+  font-family: sans-serif }
+
+/* Uncomment (and remove this text!) to get reduced vertical space in
+   compound paragraphs.
+div.compound .compound-first, div.compound .compound-middle {
+  margin-bottom: 0.5em }
+
+div.compound .compound-last, div.compound .compound-middle {
+  margin-top: 0.5em }
+*/
+
+div.dedication {
+  margin: 2em 5em ;
+  text-align: center ;
+  font-style: italic }
+
+div.dedication p.topic-title {
+  font-weight: bold ;
+  font-style: normal }
+
+div.figure {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+div.footer, div.header {
+  clear: both;
+  font-size: smaller }
+
+div.line-block {
+  display: block ;
+  margin-top: 1em ;
+  margin-bottom: 1em }
+
+div.line-block div.line-block {
+  margin-top: 0 ;
+  margin-bottom: 0 ;
+  margin-left: 1.5em }
+
+div.sidebar {
+  margin: 0 0 0.5em 1em ;
+  border: medium outset ;
+  padding: 1em ;
+  background-color: #ffffee ;
+  width: 40% ;
+  float: right ;
+  clear: right }
+
+div.sidebar p.rubric {
+  font-family: sans-serif ;
+  font-size: medium }
+
+div.system-messages {
+  margin: 5em }
+
+div.system-messages h1 {
+  color: red }
+
+div.system-message {
+  border: medium outset ;
+  padding: 1em }
+
+div.system-message p.system-message-title {
+  color: red ;
+  font-weight: bold }
+
+div.topic {
+  margin: 2em }
+
+h1.section-subtitle, h2.section-subtitle, h3.section-subtitle,
+h4.section-subtitle, h5.section-subtitle, h6.section-subtitle {
+  margin-top: 0.4em }
+
+h1.title {
+  text-align: center }
+
+h2.subtitle {
+  text-align: center }
+
+hr.docutils {
+  width: 75% }
+
+img.align-left, .figure.align-left, object.align-left {
+  clear: left ;
+  float: left ;
+  margin-right: 1em }
+
+img.align-right, .figure.align-right, object.align-right {
+  clear: right ;
+  float: right ;
+  margin-left: 1em }
+
+img.align-center, .figure.align-center, object.align-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.align-left {
+  text-align: left }
+
+.align-center {
+  clear: both ;
+  text-align: center }
+
+.align-right {
+  text-align: right }
+
+/* reset inner alignment in figures */
+div.align-right {
+  text-align: inherit }
+
+/* div.align-center * { */
+/*   text-align: left } */
+
+ol.simple, ul.simple {
+  margin-bottom: 1em }
+
+ol.arabic {
+  list-style: decimal }
+
+ol.loweralpha {
+  list-style: lower-alpha }
+
+ol.upperalpha {
+  list-style: upper-alpha }
+
+ol.lowerroman {
+  list-style: lower-roman }
+
+ol.upperroman {
+  list-style: upper-roman }
+
+p.attribution {
+  text-align: right ;
+  margin-left: 50% }
+
+p.caption {
+  font-style: italic }
+
+p.credits {
+  font-style: italic ;
+  font-size: smaller }
+
+p.label {
+  white-space: nowrap }
+
+p.rubric {
+  font-weight: bold ;
+  font-size: larger ;
+  color: maroon ;
+  text-align: center }
+
+p.sidebar-title {
+  font-family: sans-serif ;
+  font-weight: bold ;
+  font-size: larger }
+
+p.sidebar-subtitle {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+p.topic-title {
+  font-weight: bold }
+
+pre.address {
+  margin-bottom: 0 ;
+  margin-top: 0 ;
+  font: inherit }
+
+pre.literal-block, pre.doctest-block, pre.math, pre.code {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+pre.code .ln { color: grey; } /* line numbers */
+pre.code, code { background-color: #eeeeee }
+pre.code .comment, code .comment { color: #5C6576 }
+pre.code .keyword, code .keyword { color: #3B0D06; font-weight: bold }
+pre.code .literal.string, code .literal.string { color: #0C5404 }
+pre.code .name.builtin, code .name.builtin { color: #352B84 }
+pre.code .deleted, code .deleted { background-color: #DEB0A1}
+pre.code .inserted, code .inserted { background-color: #A3D289}
+
+span.classifier {
+  font-family: sans-serif ;
+  font-style: oblique }
+
+span.classifier-delimiter {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+span.interpreted {
+  font-family: sans-serif }
+
+span.option {
+  white-space: nowrap }
+
+span.pre {
+  white-space: pre }
+
+span.problematic {
+  color: red }
+
+span.section-subtitle {
+  /* font-size relative to parent (h1..h6 element) */
+  font-size: 80% }
+
+table.citation {
+  border-left: solid 1px gray;
+  margin-left: 1px }
+
+table.docinfo {
+  margin: 2em 4em }
+
+table.docutils {
+  margin-top: 0.5em ;
+  margin-bottom: 0.5em }
+
+table.footnote {
+  border-left: solid 1px black;
+  margin-left: 1px }
+
+table.docutils td, table.docutils th,
+table.docinfo td, table.docinfo th {
+  padding-left: 0.5em ;
+  padding-right: 0.5em ;
+  vertical-align: top }
+
+table.docutils th.field-name, table.docinfo th.docinfo-name {
+  font-weight: bold ;
+  text-align: left ;
+  white-space: nowrap ;
+  padding-left: 0 }
+
+/* "booktabs" style (no vertical lines) */
+table.docutils.booktabs {
+  border: 0px;
+  border-top: 2px solid;
+  border-bottom: 2px solid;
+  border-collapse: collapse;
+}
+table.docutils.booktabs * {
+  border: 0px;
+}
+table.docutils.booktabs th {
+  border-bottom: thin solid;
+  text-align: left;
+}
+
+h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
+h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
+  font-size: 100% }
+
+ul.auto-toc {
+  list-style-type: none }
+
+</style>
+</head>
+<body>
+<div class="document" id="medic">
+<h1 class="title">medic</h1>
+<h2 class="subtitle" id="a-command-line-tool-to-maintain-a-db-mirror-of-medline">a command-line tool to maintain a DB mirror of MEDLINE</h2>
+
+<p>The Swiss Army knife to parse MEDLINE XML files or
+download eUtils' PubMed XML records,
+bootstrapping a MEDLINE/PubMed database,
+updating and/or deleting the records, and
+writing the contents of selected PMIDs into flat-files.</p>
+<div class="section" id="synopsis">
+<h1>Synopsis</h1>
+<pre class="literal-block">
+medic [options] CMD FILE|PMID...
+
+medic parse baseline/medline*.xml.gz
+medic --update parse update/medline*.xml.gz
+medic --pmid-lists delete delete.txt
+medic --url sqlite://tmp.db insert pubmed.xml
+medic --pmid-lists update changed_pmids.txt
+medic --all update pubmed.xml
+medic --format html --output /var/www/medline.html write 2874014 1028734 1298474
+</pre>
+</div>
+<div class="section" id="setup">
+<h1>Setup</h1>
+<p>If you are <strong>not</strong> using <tt class="docutils literal">pip install medic</tt>, install all
+dependencies/requirements:</p>
+<pre class="literal-block">
+pip install sqlalchemy
+# only if using python3 &lt; 3.2:
+pip install argparse
+</pre>
+<p>Install the DB driver you prefer to use (supported are PostgreSQL
+and SQLite):</p>
+<pre class="literal-block">
+pip install psycopg2
+</pre>
+<p>Create the PostreSQL database:</p>
+<pre class="literal-block">
+createdb medline
+</pre>
+<p>If you are fine working with SQLite, you only need to use the path to the
+SQLite DB file in the URL option:</p>
+<pre class="literal-block">
+medic insert --url sqlite:///tmp.db 123456
+</pre>
+</div>
+<div class="section" id="description">
+<h1>Description</h1>
+<p><tt class="docutils literal">medic [options] COMMAND <span class="pre">PMID|FILE...</span></tt></p>
+<p>The <tt class="docutils literal"><span class="pre">--url</span> URL</tt> option represents the DSN of the database and might
+be needed (default: <tt class="docutils literal"><span class="pre">postgresql://localhost/medline</span></tt>); For example:</p>
+<dl class="docutils">
+<dt>PostgreSQL</dt>
+<dd><tt class="docutils literal"><span class="pre">postgresql://host//dbname</span></tt></dd>
+<dt>SQLite DB</dt>
+<dd><tt class="docutils literal"><span class="pre">sqlite:////absolute/path/to/foo.db</span></tt> or
+<tt class="docutils literal"><span class="pre">sqlite:///relative/path/to/foo.db</span></tt></dd>
+</dl>
+<p>The five <strong>COMMAND</strong> arguments:</p>
+<dl class="docutils">
+<dt><tt class="docutils literal">insert</tt></dt>
+<dd>Create records in the DB by parsing MEDLINE XML files or
+by downloading PubMed XML from NCBI eUtils for a list of PMIDs.</dd>
+<dt><tt class="docutils literal">write</tt></dt>
+<dd>Write records as plaintext files to a directory, each file named as
+&quot;&lt;pmid&gt;.txt&quot;, and containing most of the DB stored content or just the
+TIAB (title and abstract). In addition, a single file in TSV or HTML
+format can be generated (see option <tt class="docutils literal"><span class="pre">--format</span></tt>).</dd>
+<dt><tt class="docutils literal">update</tt></dt>
+<dd>Insert or update records in the DB (instead of creating them); note that
+if a record exists, but is added with <tt class="docutils literal">create</tt>, this would throw an
+<cite>IntegrityError</cite>. If you are not sure if the records are in the DB or
+not, use <tt class="docutils literal">update</tt> (N.B. that <tt class="docutils literal">update</tt> is slower).</dd>
+<dt><tt class="docutils literal">delete</tt></dt>
+<dd>Delete records from the DB for a list of PMIDs (use <tt class="docutils literal"><span class="pre">--pmid-lists</span></tt>!)</dd>
+<dt><tt class="docutils literal">parse</tt></dt>
+<dd>Does not interact with the DB, but rather creates &quot;.tab&quot; files for each
+table that later can be used to load a database, particularly useful when
+bootstrapping a large collection.</dd>
+</dl>
+<p>For example, to download two PubMed records by PMID and update them in
+the DB:</p>
+<pre class="literal-block">
+medic update 100000 123456
+</pre>
+<p>Add a single MEDLINE or PubMed XML file to the database:</p>
+<pre class="literal-block">
+medic insert pudmed.xml
+</pre>
+<p>Export a few records from the database as HTML (to STDOUT):</p>
+<pre class="literal-block">
+medic write --format html 292837491 128374 213487
+</pre>
+<p>Note that if the suffix &quot;.gz&quot; is present, the parser automatically
+decompresses the XML file(s) first. This feature <em>only</em> works with
+GNU-zipped files and the &quot;.gz&quot; suffix must be present.</p>
+<p>Therefore, command line arguments are treated as follows:</p>
+<dl class="docutils">
+<dt>integer values</dt>
+<dd>are always treated as PMIDs to download PubMed XML data</dd>
+<dt>all other values</dt>
+<dd>are always treated as MEDLINE XML files to parse
+<strong>unless</strong> you use the option <tt class="docutils literal"><span class="pre">--pmid-lists</span></tt></dd>
+<dt>files ending in &quot;.gz&quot;</dt>
+<dd>are always treated as gzipped MEDLINE XML files</dd>
+</dl>
+</div>
+<div class="section" id="requirements">
+<h1>Requirements</h1>
+<ul class="simple">
+<li>Python 3.2+</li>
+<li>SQL Alchewy 0.8+</li>
+<li>PostgreSQL 8.4+ or SQLite 3.7+</li>
+</ul>
+<p><em>Note</em> that while any SQL Alchemy DB might work, it is <strong>strongly</strong> discouraged
+to use any other combination that PostgeSQL and psycogp2 or SQLite and the
+Python STDLIB drivers, because it has not been tested.</p>
+</div>
+<div class="section" id="loading-medline">
+<h1>Loading MEDLINE</h1>
+<p>Please be aware that the MEDLINE distribution <strong>is not unique</strong>, meaning that
+it contains a few records multiple times (see the section about
+<strong>Version IDs</strong>).</p>
+<p>Parsing and loading the baseline into a PostgreSQL DB on the same machine:</p>
+<pre class="literal-block">
+medic parse baseline/medline14n*.xml.gz
+
+for table in records descriptors qualifiers authors \
+sections databases identifiers chemicals;
+  do psql medline -c &quot;COPY $table FROM '`pwd`/${table}.tab';&quot;;
+done
+</pre>
+<p>For the update files, you need to go <em>one-by-one</em>, adding each one <em>in order</em>,
+and using the flag <tt class="docutils literal"><span class="pre">--update</span></tt> when parsing the XML. After parsing an XML file
+and <em>before</em> loading the dump, run <tt class="docutils literal">medic delete <span class="pre">--pmid-lists</span> delete.txt</tt>
+to get rid of all entities that will be updated or should be removed (PMIDs
+listed as <tt class="docutils literal">DeleteCitation</tt>s):</p>
+<pre class="literal-block">
+# parse a MEDLINE update file:
+medic --update parse medline14n1234.xml.gz
+
+# delete updated and DeleteCitation records:
+medic --pmid-lists delete delete.txt
+
+# load all tables; see below, loading baseline:
+for table in records descriptors qualifiers authors \
+sections databases identifiers chemicals;
+  do psql medline -c &quot;COPY $table FROM '`pwd`/${table}.tab';&quot;;
+done
+</pre>
+</div>
+<div class="section" id="version-ids">
+<h1>Version IDs</h1>
+<p>MEDLINE has began to use versions to allow publishers to add multiple citations
+for the same PMID. This only occurs with 71 articles from one journal,
+&quot;PLOS Curr&quot;, in the 2013 baseline, creating a total of 149 non-unique records.</p>
+<p>As this is the only journal and as there should only be one abstract per
+publication in the database, alternative versions are currently being ignored.
+In other words, if a MedlineCitation has a VersionID value, that records can
+be skipped to avoid DB errors from non-unique records.</p>
+<p>For example, in the 2013 baseline, PMID 20029614 is present ten times in the
+baseline, each version at a different stage of revision. Because it is the
+first entry (in the order they appear in the baseline files) without a
+<tt class="docutils literal">VersionID</tt> or a version of &quot;1&quot; that so far is the relevant record,
+<tt class="docutils literal">medic</tt> by default filters citations with other versions than &quot;1&quot;. If you
+do want to process other versions of a citation, use the option <tt class="docutils literal"><span class="pre">--all</span></tt>.</p>
+<p>In short, this tool by default <strong>removes</strong> alternate citations.</p>
+</div>
+<div class="section" id="database-er-model">
+<h1>Database ER Model</h1>
+<pre class="literal-block">
+[Author] → [Medline] ← [Descriptor] ← [Qualifier]
+            ↑     ↑
+  [Identifier]   [Section]  [Database]  [Chemical] [Keyword]
+</pre>
+<dl class="docutils">
+<dt>Medline (records)</dt>
+<dd><strong>pmid</strong>:BIGINT, <em>status</em>:ENUM(state), <em>journal</em>:VARCHAR(256),
+<em>created</em>:DATE, completed:DATE, revised:DATE, modified:DATE</dd>
+<dt>Author (authors)</dt>
+<dd><strong>pmid</strong>:FK(Medline), <strong>pos</strong>:SMALLINT, <em>name</em>:TEXT,
+initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),</dd>
+<dt>Descriptor (descriptors)</dt>
+<dd><strong>pmid</strong>:FK(Medline), <strong>num</strong>:SMALLINT, major:BOOL, <em>name</em>:TEXT</dd>
+<dt>Qualifier (qualifiers)</dt>
+<dd><strong>pmid</strong>:FK(Descriptor), <strong>num</strong>:FK(Descriptor), <strong>sub</strong>:SMALLINT, major:BOOL, <em>name</em>:TEXT</dd>
+<dt>Identifier (identifiers)</dt>
+<dd><strong>pmid</strong>:FK(Medline), <strong>namespace</strong>:VARCHAR(32), <em>value</em>:VARCHAR(256)</dd>
+<dt>Database (databases)</dt>
+<dd><strong>pmid</strong>:FK(Medline), <strong>name</strong>:VARCHAR(32), <strong>accession</strong>:VARCHAR(256)</dd>
+<dt>Chemical (chemicals)</dt>
+<dd><strong>pmid</strong>:FK(Medline), <strong>idx</strong>:VARCHAR(32), uid:VARCHAR(256), <em>name</em>:VARCHAR(256)</dd>
+<dt>Keyword (keywords)</dt>
+<dd><strong>pmid</strong>:FK(Medline), <strong>owner</strong>:ENUM(owner), <strong>cnt</strong>:SMALLINT, major:BOOL, <em>value</em>:TEXT</dd>
+<dt>Section (sections)</dt>
+<dd><strong>pmid</strong>:FK(Medline), <strong>seq</strong>:SMALLINT, <em>name</em>:ENUM(section),
+label:VARCHAR(256), <em>content</em>:TEXT</dd>
+</dl>
+<ul class="simple">
+<li><strong>bold</strong> (Composite) Primary Key</li>
+<li><em>italic</em> NOT NULL (Strings that may not be NULL are also never empty.)</li>
+</ul>
+</div>
+<div class="section" id="supported-xml-elements">
+<h1>Supported XML Elements</h1>
+<div class="section" id="entities">
+<h2>Entities</h2>
+<ul class="simple">
+<li>The citation (<tt class="docutils literal">Medline</tt> and <tt class="docutils literal">Identifier</tt>)</li>
+<li>Title, Abstract, and Copyright (<tt class="docutils literal">Section</tt>)</li>
+<li>Author (<tt class="docutils literal">Author</tt>)</li>
+<li>Chemical (<tt class="docutils literal">Chemcial</tt>)</li>
+<li>DataBank (<tt class="docutils literal">Database</tt>)</li>
+<li>Keyword (<tt class="docutils literal">Keyword</tt>)</li>
+<li>MeshHeading (<tt class="docutils literal">Descriptor</tt> and <tt class="docutils literal">Qualifier</tt>)</li>
+<li>DeleteCitation (for deleting records when parsing updates)</li>
+</ul>
+</div>
+<div class="section" id="fields-values">
+<h2>Fields/Values</h2>
+<ul class="simple">
+<li>AbstractText (<tt class="docutils literal">Section.name</tt> &quot;Abstract&quot; or the <em>NlmCategory</em>, <tt class="docutils literal">Section.content</tt> with <em>Label</em> as <tt class="docutils literal">Section.label</tt>)</li>
+<li>AccessionNumber (<tt class="docutils literal">Database.accession</tt>)</li>
+<li>ArticleId (<tt class="docutils literal">Identifier.value</tt> with <em>IdType</em> as <tt class="docutils literal">Identifier.namesapce</tt>; only available in online PubMed XML)</li>
+<li>ArticleTitle (<tt class="docutils literal">Section.name</tt> &quot;Title&quot;, <tt class="docutils literal">Section.content</tt>)</li>
+<li>CollectiveName (<tt class="docutils literal">Author.name</tt>)</li>
+<li>CopyrightInformation (<tt class="docutils literal">Section.name</tt> &quot;Copyright&quot;, <tt class="docutils literal">Section.content</tt>)</li>
+<li>DataBankName (<tt class="docutils literal">Database.name</tt>)</li>
+<li>DateCompleted (<tt class="docutils literal">Medline.completed</tt>)</li>
+<li>DateCreated (<tt class="docutils literal">Medline.created</tt>)</li>
+<li>DateRevised (<tt class="docutils literal">Medline.revised</tt>)</li>
+<li>DescriptorName (<tt class="docutils literal">Descriptor.name</tt> with <em>MajorTopicYN</em> as <tt class="docutils literal">Descriptor.major</tt>)</li>
+<li>ELocationID (<tt class="docutils literal">Identifier.value</tt> with <em>EIdType</em> as <tt class="docutils literal">Identifier.namespace</tt>)</li>
+<li>ForeName (<tt class="docutils literal">Author.forename</tt>)</li>
+<li>Initials (<tt class="docutils literal">Author.initials</tt>)</li>
+<li>Keyword (<tt class="docutils literal">Keyword.value</tt> with <em>Owner</em> as <tt class="docutils literal">Keyword.owner</tt> and <em>MajorTopicYN</em> as <tt class="docutils literal">Keyword.major</tt>)</li>
+<li>LastName (<tt class="docutils literal">Author.name</tt>)</li>
+<li>MedlineCitation (only <em>Status</em> as <tt class="docutils literal">Medline.status</tt>)</li>
+<li>MedlineTA (<tt class="docutils literal">Medline.journal</tt>)</li>
+<li>NameOfSubstance (<tt class="docutils literal">Chemcial.name</tt>)</li>
+<li>OtherID (<tt class="docutils literal">Identifier.value</tt> iff <em>Source</em> is &quot;PMC&quot; with <tt class="docutils literal">Identifier.namespace</tt> as &quot;pmc&quot;)</li>
+<li>PMID (<tt class="docutils literal">Medline.pmid</tt>)</li>
+<li>QualifierName (<tt class="docutils literal">Qualifier.name</tt> with <em>MajorTopicYN</em> as <tt class="docutils literal">Qualifier.major</tt>)</li>
+<li>RegistryNumber (<tt class="docutils literal">Chemical.uid</tt>)</li>
+<li>Suffix (<tt class="docutils literal">Author.suffix</tt>)</li>
+<li>VernacularTitle (<tt class="docutils literal">Section.name</tt> &quot;Vernacular&quot;, <tt class="docutils literal">Section.content</tt>)</li>
+</ul>
+</div>
+</div>
+<div class="section" id="version-history">
+<h1>Version History</h1>
+<dl class="docutils">
+<dt>1.2.0</dt>
+<dd><ul class="first last simple">
+<li>added support for the new entity Keywords</li>
+<li>DB structure change: descriptors.major and qualifiers.major columns swapped</li>
+</ul>
+</dd>
+<dt>1.1.1</dt>
+<dd><ul class="first last simple">
+<li>code cleanup (PEP8, PyFlake)</li>
+<li>fixed an issue where the parser would not leave the skipping state</li>
+</ul>
+</dd>
+<dt>1.1.0</dt>
+<dd><ul class="first last simple">
+<li><tt class="docutils literal"><span class="pre">--update</span> parse</tt> now writes a file to use with <tt class="docutils literal"><span class="pre">--pmid-lists</span> delete</tt></li>
+<li>fixed a bug with CRUD manager</li>
+<li>added a man page</li>
+</ul>
+</dd>
+<dt>1.0.2</dt>
+<dd><ul class="first last simple">
+<li>fixes to make the PyPi version and <tt class="docutils literal">pip install medic</tt> work</li>
+</ul>
+</dd>
+<dt>1.0.1</dt>
+<dd><ul class="first last simple">
+<li>updates to the setup.py and README.rst files</li>
+</ul>
+</dd>
+<dt>1.0.0</dt>
+<dd><ul class="first last simple">
+<li>initial release</li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="copyright-and-license">
+<h1>Copyright and License</h1>
+<p>License: <a class="reference external" href="http://www.gnu.org/licenses/gpl-3.0.html">GNU GPL v3</a>.
+Copryright 2012, 2013 Florian Leitner. All rights reserved.</p>
+</div>
+</div>
+</body>
+</html>

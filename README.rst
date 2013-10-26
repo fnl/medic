@@ -186,7 +186,7 @@ Database ER Model
 
     [Author] → [Medline] ← [Descriptor] ← [Qualifier]
                 ↑     ↑
-      [Identifier]   [Section]  [Database]  [Chemical]
+      [Identifier]   [Section]  [Database]  [Chemical] [Keyword]
 
 Medline (records)
   **pmid**:BIGINT, *status*:ENUM(state), *journal*:VARCHAR(256),
@@ -197,11 +197,10 @@ Author (authors)
   initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),
 
 Descriptor (descriptors)
-  **pmid**:FK(Medline), **pos**:SMALLINT, *name*:TEXT, major:BOOL
+  **pmid**:FK(Medline), **num**:SMALLINT, major:BOOL, *name*:TEXT
 
 Qualifier (qualifiers)
-  **pmid**:FK(Descriptor), **pos**:FK(Descriptor), **sub**:SMALLINT,
-  *name*:TEXT, major:BOOL
+  **pmid**:FK(Descriptor), **num**:FK(Descriptor), **sub**:SMALLINT, major:BOOL, *name*:TEXT
 
 Identifier (identifiers)
   **pmid**:FK(Medline), **namespace**:VARCHAR(32), *value*:VARCHAR(256)
@@ -210,7 +209,10 @@ Database (databases)
   **pmid**:FK(Medline), **name**:VARCHAR(32), **accession**:VARCHAR(256)
 
 Chemical (chemicals)
-  **pmid**:FK(Medline), **num**:VARCHAR(32), uid:VARCHAR(256), *name*:VARCHAR(256)
+  **pmid**:FK(Medline), **idx**:VARCHAR(32), uid:VARCHAR(256), *name*:VARCHAR(256)
+
+Keyword (keywords)
+  **pmid**:FK(Medline), **owner**:ENUM(owner), **cnt**:SMALLINT, major:BOOL, *value*:TEXT
 
 Section (sections)
   **pmid**:FK(Medline), **seq**:SMALLINT, *name*:ENUM(section),
@@ -230,6 +232,7 @@ Entities
 - Author (``Author``)
 - Chemical (``Chemcial``)
 - DataBank (``Database``)
+- Keyword (``Keyword``)
 - MeshHeading (``Descriptor`` and ``Qualifier``)
 - DeleteCitation (for deleting records when parsing updates)
 
@@ -250,6 +253,7 @@ Fields/Values
 - ELocationID (``Identifier.value`` with *EIdType* as ``Identifier.namespace``)
 - ForeName (``Author.forename``)
 - Initials (``Author.initials``)
+- Keyword (``Keyword.value`` with *Owner* as ``Keyword.owner`` and *MajorTopicYN* as ``Keyword.major``)
 - LastName (``Author.name``)
 - MedlineCitation (only *Status* as ``Medline.status``)
 - MedlineTA (``Medline.journal``)
@@ -264,6 +268,9 @@ Fields/Values
 Version History
 ===============
 
+1.2.0
+  - added support for the new entity Keywords
+  - DB structure change: descriptors.major and qualifiers.major columns swapped
 1.1.1
   - code cleanup (PEP8, PyFlake)
   - fixed an issue where the parser would not leave the skipping state

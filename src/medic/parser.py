@@ -14,7 +14,7 @@ from xml.etree.ElementTree import iterparse
 from datetime import date
 
 from medic.orm import \
-        Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, Chemical
+        Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, Chemical, Keyword
 
 __all__ = ['MedlineXMLParser', 'PubMedXMLParser']
 
@@ -157,19 +157,11 @@ class MedlineXMLParser(Parser):
     def __init__(self, *args, **kwargs):
         super(MedlineXMLParser, self).__init__(*args, **kwargs)
         self.seq = 0
-        self.num = 0
-        self.sub = 0
-        self.pos = 0
-        self.chem = 0
         self.namespaces = None
 
     def reset(self, pmid):
         super(MedlineXMLParser, self).reset(pmid)
         self.seq = 0
-        self.num = 0
-        self.sub = 0
-        self.pos = 0
-        self.chem = 0
         self.namespaces = set()
 
     def AbstractText(self, element):
@@ -194,7 +186,11 @@ class MedlineXMLParser(Parser):
             self.seq += 1
             return Section(self.pmid, self.seq, 'Title', element.text.strip())
 
-    def Author(self, element):
+    def AuthorList(self, element):
+        for pos, author in enumerate(element.getchildren()):
+            yield self.parseAuthor(pos, author)
+
+    def parseAuthor(self, pos, element):
         name, forename, initials, suffix = self.parseAuthorElements(element.getchildren())
 
         if initials == forename and initials is not None:
@@ -202,8 +198,7 @@ class MedlineXMLParser(Parser):
             forename = None
 
         if name is not None:
-            self.pos += 1
-            return Author(self.pmid, self.pos, name, initials, forename, suffix)
+            return Author(self.pmid, pos + 1, name, initials, forename, suffix)
         else:
             logger.warning('empty or missing Author/LastName or CollectiveName in %i',
                            self.pmid)
@@ -240,16 +235,16 @@ class MedlineXMLParser(Parser):
 
         return name, forename, initials, suffix
 
-    def Chemical(self, element):
-        self.chem += 1
-        e = element.find('RegistryNumber')
-        uid = None
+    def ChemicalList(self, element):
+        for idx, chemical in enumerate(element.getchildren()):
+            e = chemical.find('RegistryNumber')
+            uid = None
 
-        if e is not None and e.text is not None and e.text.strip() != "0":
-            uid = e.text.strip()
+            if e is not None and e.text is not None and e.text.strip() != "0":
+                uid = e.text.strip()
 
-        name = element.find('NameOfSubstance')
-        return Chemical(self.pmid, self.chem, uid, name.text.strip())
+            name = chemical.find('NameOfSubstance')
+            yield Chemical(self.pmid, idx + 1, name.text.strip(), uid)
 
     def CopyrightInformation(self, element):
         if element.text is not None:
@@ -267,23 +262,6 @@ class MedlineXMLParser(Parser):
                     done.add(acc.text)
                     yield Database(self.pmid, name.text, acc.text)
 
-    def DescriptorName(self, element):
-        if element.text is not None:
-            self.num += 1
-            self.sub = 0
-            return Descriptor(
-                self.pmid, self.num, element.text.strip(),
-                (element.get('MajorTopicYN', 'N') == 'Y')
-            )
-
-    def QualifierName(self, element):
-        if element.text is not None:
-            self.sub += 1
-            return Qualifier(
-                self.pmid, self.num, self.sub, element.text.strip(),
-                (element.get('MajorTopicYN', 'N') == 'Y')
-            )
-
     def ELocationID(self, element):
         ns = element.get('EIdType').strip().lower()
 
@@ -293,11 +271,44 @@ class MedlineXMLParser(Parser):
 
         return None
 
+    def KeywordList(self, element):
+        owner = element.get('Owner', 'NLM').strip().upper()
+        logger.debug('KeywordList Owner="%s"', owner)
+
+        for cnt, keyword in enumerate(element.getchildren()):
+            if keyword.text is not None:
+                yield Keyword(
+                    self.pmid, owner, cnt + 1, keyword.text.strip(),
+                    keyword.get('MajorTopicYN', 'N') == 'Y',
+                )
+
+
     def MedlineCitation(self, element):
         instance = Parser.MedlineCitation(self, element)
         element.clear()
         self.undefined()
         return instance
+
+    def MeshHeadingList(self, element):
+        for num, mesh in enumerate(element.getchildren()):
+            yield self.parseDescriptor(num, mesh.find('DescriptorName'))
+
+            for sub, qualifier in enumerate(mesh.findall('QualifierName')):
+                yield self.parseQualifier(num, sub, qualifier)
+
+    def parseDescriptor(self, num, element):
+        if element.text is not None:
+            return Descriptor(
+                self.pmid, num + 1, element.text.strip(),
+                element.get('MajorTopicYN', 'N') == 'Y',
+            )
+
+    def parseQualifier(self, num, sub, element):
+        if element.text is not None:
+            return Qualifier(
+                self.pmid, num + 1, sub + 1, element.text.strip(),
+                element.get('MajorTopicYN', 'N') == 'Y',
+            )
 
     def OtherID(self, element):
         if element.get('Source', None) == 'NLM':

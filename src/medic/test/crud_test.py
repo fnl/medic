@@ -6,20 +6,21 @@ from io import StringIO
 from tempfile import TemporaryFile
 
 from medic.orm import \
-        Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, Chemical
+        Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, Chemical, Keyword
 from medic.crud import _dump
 
 DATA = [
     Section(1, 1, 'Title', 'The Title'),
     Section(1, 2, 'Abstract', 'The Abstract'),
     Descriptor(1, 1, 'd_name', True),
-    Descriptor(1, 2, 'd_name', False),
+    Descriptor(1, 2, 'd_name'),
     Qualifier(1, 1, 1, 'q_name', True),
     Author(1, 1, 'first'),
     Author(1, 2, 'last'),
     Identifier(1, 'ns', 'id'),
     Database(1, 'name', 'accession'),
-    Chemical(1, 1, 'uid', 'name'),
+    Chemical(1, 1, 'name', 'uid'),
+    Keyword(1, 'NOTNLM', 1, 'name', True),
     Medline(1, 'MEDLINE', 'journal', date.today()),
 ]
 
@@ -45,6 +46,7 @@ class TestDump(unittest.TestCase):
             Identifier.__tablename__: StringIO(),
             Database.__tablename__: StringIO(),
             Chemical.__tablename__: StringIO(),
+            Keyword.__tablename__: StringIO(),
             'delete': StringIO(),
         }
 

@@ -143,6 +143,8 @@ function toggleVisibility(pmid, target) {
 
             if rec.descriptors:
                 p('    {}'.format(button(rec.pmid, "mesh", "MeSH Terms")))
+            if rec.keywords:
+                p('    {}'.format(button(rec.pmid, "kwds", "Keywords")))
             if rec.chemicals:
                 p('    {}'.format(button(rec.pmid, "chem", "Chemicals")))
             if rec.databases:
@@ -177,6 +179,23 @@ function toggleVisibility(pmid, target) {
                         chem.name, "" if chem.uid is None else " ({})".format(chem.uid)))
 
                 p('    </ul>')
+
+            if rec.keywords:
+                p('    <dl class="kwds">')
+                owner = None
+
+                for kwd in rec.keywords:
+                    if kwd.owner != owner:
+                         if owner != None: p('        </dd>')
+                         p('      <dt>{}</dt><dd>'.format(kwd.owner))
+                         owner = kwd.owner
+
+                    if kwd.major:
+                        p('      <li><b>{}</b></li>'.format(kwd.value))
+                    else:
+                        p('      <li>{}</li>'.format(kwd.value))
+
+                p('    </dd></dl>')
 
             if rec.databases:
                 p('    <ul class="xref">')
@@ -242,6 +261,8 @@ def WriteRecords(query, format:str, output_dir:str):
                     print('+' if desc.major else '-', desc.name, file=file)
                     for qual in desc.qualifiers:
                         print(' +' if qual.major else ' -', qual.name, file=file)
+                for kwd in rec.keywords:
+                    print('@' if kwd.major else '#', kwd.value, file=file)
                 for xref in rec.databases:
                     print('> {}:{}'.format(xref.name, xref.accession), file=file)
                 for chem in rec.chemicals:

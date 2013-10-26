@@ -21,7 +21,8 @@ from sqlalchemy.types import \
     Boolean, BigInteger, Date, SmallInteger, Unicode, UnicodeText
 
 __all__ = [
-    'Medline', 'Author', 'Chemical', 'Database', 'Descriptor', 'Identifier', 'Qualifier', 'Section'
+    'Medline', 'Author', 'Chemical', 'Database', 'Descriptor',
+    'Identifier', 'Keyword', 'Qualifier', 'Section'
 ]
 
 _Base = declarative_base()
@@ -47,17 +48,18 @@ def InitDb(*args, **kwds):
     global _Base
     global _db
     global _session
+
     if len(args) > 0:
         # inject the foreign key pragma when using SQLite databases to ensure integrity
         # http://docs.sqlalchemy.org/en/rel_0_8/dialects/sqlite.html#foreign-key-support
         if (isinstance(args[0], str) and args[0].startswith('sqlite')) or \
                 (isinstance(args[0], URL) and args[0].get_dialect() == 'sqlite'):
-            #noinspection PyUnusedLocal
             @event.listens_for(engine.Engine, "connect")
             def set_sqlite_pragma(dbapi_connection, _):
                 cursor = dbapi_connection.cursor()
                 cursor.execute("PRAGMA foreign_keys=ON")
                 cursor.close()
+
     _db = engine.create_engine(*args, **kwds)
     _Base.metadata.create_all(_db)
     _session = session.sessionmaker(bind=_db)
@@ -106,7 +108,6 @@ class SelectMixin(object):
     (i.e., `Medline`, except for `Qualifier`).
     """
 
-    # noinspection PyUnresolvedReferences
     @classmethod
     def _buildQuery(cls, columns, parent_pk):
         if isinstance(parent_pk, tuple):
@@ -136,7 +137,6 @@ class SelectMixin(object):
         :arg  attributes: A list of attribute (column) names
         :type attributes: :class:`list` of :class:`str`
         """
-        # noinspection PyUnresolvedReferences
         mapping = dict((col.key, col) for col in cls.__table__.c)
         columns = [mapping[name] for name in attributes]
         query = cls._buildQuery(columns, parent_pk)
@@ -149,7 +149,6 @@ class SelectMixin(object):
 
         See :meth:`select` for details.
         """
-        # noinspection PyUnresolvedReferences
         query = cls._buildQuery([cls.__table__], parent_pk)
         return _fetch_all(query)
 
@@ -305,7 +304,7 @@ class Author(_Base, SelectMixin):
                  initials: str=None, forename: str=None, suffix: str=None):
         assert pmid > 0, pmid
         assert pos > 0, pos
-        assert name
+        assert name, repr(name)
         self.pmid = pmid
         self.pos = pos
         self.name = name
@@ -368,10 +367,10 @@ class Qualifier(_Base, SelectMixin):
             the descriptor order in the record (starting from 1)
         sub
             the qualifier order within the descriptor (starting from 1)
-        name
-            the qualifier (name)
         major
             ``True`` if major, ``False`` if minor
+        name
+            the qualifier (name)
 
     Primary Key: ``(pmid, num, sub)``
     """
@@ -387,26 +386,24 @@ class Qualifier(_Base, SelectMixin):
     pmid = Column(BigInteger, ForeignKey('records', ondelete="CASCADE"), primary_key=True)
     num = Column(SmallInteger, primary_key=True)
     sub = Column(SmallInteger, CheckConstraint("sub > 0"), primary_key=True)
-    name = Column(
-        UnicodeText, CheckConstraint("name <> ''"), nullable=False
-    )
     major = Column(Boolean, nullable=False)
+    name = Column(UnicodeText, CheckConstraint("name <> ''"), nullable=False)
 
     def __init__(self, pmid: int, num: int, sub: int, name: str, major: bool=False):
         assert pmid > 0, pmid
         assert num > 0, num
         assert sub > 0, sub
-        assert name
+        assert name, repr(name)
         self.pmid = pmid
         self.num = num
         self.sub = sub
-        self.name = name
         self.major = major
+        self.name = name
 
     def __str__(self):
         return '{}\t{}\t{}\t{}\t{}\n'.format(
-            NULL(self.pmid), NULL(self.num), NULL(self.sub), NULL(self.name),
-            'T' if self.major else 'F'
+            NULL(self.pmid), NULL(self.num), NULL(self.sub),
+            'T' if self.major else 'F', NULL(self.name),
         )
 
     def __repr__(self):
@@ -431,10 +428,10 @@ class Descriptor(_Base, SelectMixin):
             the record this descriptor name belongs to
         num
             the descriptor order in the record (starting from 1)
-        name
-            the descriptor
         major
             ``True`` if major, ``False`` if minor
+        name
+            the descriptor
 
     Relations:
 
@@ -448,10 +445,8 @@ class Descriptor(_Base, SelectMixin):
 
     pmid = Column(BigInteger, ForeignKey('records', ondelete="CASCADE"), primary_key=True)
     num = Column(SmallInteger, CheckConstraint("num > 0"), primary_key=True)
-    name = Column(
-        UnicodeText, CheckConstraint("name <> ''"), nullable=False
-    )
     major = Column(Boolean, nullable=False)
+    name = Column(UnicodeText, CheckConstraint("name <> ''"), nullable=False)
 
     qualifiers = relation(
         Qualifier, backref='descriptor', cascade="all",
@@ -459,18 +454,17 @@ class Descriptor(_Base, SelectMixin):
     )
 
     def __init__(self, pmid: int, num: int, name: str, major: bool=False):
-        assert pmid > 0
-        assert num > 0
-        assert name
+        assert pmid > 0, pmid
+        assert num > 0, num
+        assert name, repr(name)
         self.pmid = pmid
         self.num = num
-        self.name = name
         self.major = major
+        self.name = name
 
     def __str__(self):
         return '{}\t{}\t{}\t{}\n'.format(
-            NULL(self.pmid), NULL(self.num), NULL(self.name),
-            'T' if self.major else 'F'
+            NULL(self.pmid), NULL(self.num), 'T' if self.major else 'F', NULL(self.name)
         )
 
     def __repr__(self):
@@ -492,49 +486,51 @@ class Chemical(_Base, SelectMixin):
 
         pmid
             the record's identifier (PubMed ID)
-        num
+        idx
             the order in the XML record
         uid
             the chemical's "unique identifier" (registry number, etc.)
         name
             the chemical's name
 
-    Primary Key: ``(pmid, num)``
+    Primary Key: ``(pmid, idx)``
     """
 
     __tablename__ = 'chemicals'
 
     pmid = Column(BigInteger, ForeignKey('records', ondelete="CASCADE"), primary_key=True)
-    num = Column(SmallInteger, CheckConstraint("num > 0"), primary_key=True)
-    uid = Column(Unicode(length=256))
+    idx = Column(SmallInteger, CheckConstraint("idx > 0"), primary_key=True)
+    uid = Column(Unicode(length=256), nullable=True)
     name = Column(Unicode(length=256), CheckConstraint("name <> ''"), nullable=False)
 
-    def __init__(self, pmid: int, num: int, uid, name: str):
-        assert pmid > 0
-        assert num > 0
-        assert name
+    def __init__(self, pmid: int, idx: int, name: str, uid: str=None):
+        assert pmid > 0, pmid
+        assert idx > 0, idx
+        assert name, repr(name)
         self.pmid = pmid
-        self.num = num
+        self.idx = idx
         self.uid = uid
         self.name = name
 
     def __str__(self):
         return '{}\t{}\t{}\t{}\n'.format(
-            NULL(self.pmid), NULL(self.num), NULL(self.uid), self.name
+            NULL(self.pmid), NULL(self.idx), NULL(self.uid), self.name
         )
 
     def __repr__(self):
-        return "Chemical<{}:{}>".format(self.pmid, self.num)
+        return "Chemical<{}:{}>".format(self.pmid, self.idx)
 
     def __eq__(self, other):
         return isinstance(other, Chemical) and \
                self.pmid == other.pmid and \
-               self.num == other.num
+               self.idx == other.idx and \
+               self.uid == other.uid and \
+               self.name == other.name
 
 
 class Database(_Base, SelectMixin):
     """
-    References to external databases curated my the NLM.
+    References to external databases curated by the NLM.
 
     Attributes:
 
@@ -555,8 +551,8 @@ class Database(_Base, SelectMixin):
     accession = Column(Unicode(length=256), CheckConstraint("accession <> ''"), primary_key=True)
 
     def __init__(self, pmid: int, name: str, accession: str):
-        assert pmid > 0
-        assert name
+        assert pmid > 0, pmid
+        assert name, repr(name)
         assert accession, repr(accession)
         self.pmid = pmid
         self.name = name
@@ -577,6 +573,68 @@ class Database(_Base, SelectMixin):
                self.accession == other.accession
 
 
+class Keyword(_Base, SelectMixin):
+    """
+    Keywords, external or curated by the NLM.
+
+    Attributes:
+
+        pmid
+            the record's identifier (PubMed ID)
+        owner
+            the entity that provided the keyword
+        cnt
+            a unique counter for all keywords from a given owner and record
+            (starting from 1)
+        major
+            if the keyword is a major topic of this article
+        value
+            the keyword itself
+
+    Primary Key: ``(pmid, owner, cnt)``
+    """
+
+    __tablename__ = 'keywords'
+
+    OWNERS = frozenset({'NASA', 'PIP', 'KIE', 'NLM', 'NOTNLM', 'HHS'})
+
+    pmid = Column(BigInteger, ForeignKey('records', ondelete="CASCADE"), primary_key=True)
+    owner = Column(Enum(*OWNERS, name='owner'), primary_key=True)
+    cnt = Column(SmallInteger, CheckConstraint("cnt > 0"), primary_key=True)
+    major = Column(Boolean, nullable=False)
+    value = Column(UnicodeText, CheckConstraint("value <> ''"), nullable=False)
+
+    def __init__(self, pmid: int, owner: str, cnt: int, value: str, major: bool=False):
+        assert pmid > 0, pmid
+        assert owner in Keyword.OWNERS, repr(owner)
+        assert cnt > 0, cnt
+        assert value, repr(value)
+        self.pmid = pmid
+        self.owner = owner
+        self.cnt = cnt
+        self.major = major
+        self.value = value
+
+    def __str__(self):
+        return '{}\t{}\t{}\t{}\t{}\n'.format(
+            NULL(self.pmid), NULL(self.owner), NULL(self.cnt),
+            'T' if self.major else 'F', NULL(self.value)
+        )
+
+    def __repr__(self):
+        return "Keyword<{}:{}:{}>".format(
+                self.pmid, self.owner, self.cnt
+        )
+
+    def __eq__(self, other):
+        return isinstance(other, Keyword) and \
+               self.pmid == other.pmid and \
+               self.owner == other.owner and \
+               self.cnt == other.cnt and \
+               self.major == other.major and \
+               self.value == other.value
+
+
 class Section(_Base, SelectMixin):
     """
     The text sections of the records.
@@ -594,7 +652,7 @@ class Section(_Base, SelectMixin):
         content
             the text content of this section
 
-    Primary Key: ``(pmid, num)``
+    Primary Key: ``(pmid, seq)``
     """
 
     SECTIONS = frozenset({'Title', 'Abstract', 'Vernacular', 'Copyright',
@@ -607,15 +665,13 @@ class Section(_Base, SelectMixin):
     seq = Column(SmallInteger, CheckConstraint("seq > 0"), primary_key=True)
     name = Column(Enum(*SECTIONS, name='section'), nullable=False)
     label = Column(Unicode(length=256))
-    content = Column(
-        UnicodeText, CheckConstraint("content <> ''"), nullable=False
-    )
+    content = Column(UnicodeText, CheckConstraint("content <> ''"), nullable=False)
 
     def __init__(self, pmid: int, seq: int, name: str, content: str, label: str=None):
-        assert pmid > 0
-        assert seq > 0
-        assert name in Section.SECTIONS, name
-        assert content
+        assert pmid > 0, pmid
+        assert seq > 0, seq
+        assert name in Section.SECTIONS, repr(name)
+        assert content, repr(content)
         self.pmid = pmid
         self.seq = seq
         self.name = name
@@ -694,30 +750,34 @@ class Medline(_Base):
 
     __tablename__ = 'records'
 
-    sections = relation(
-        Section, backref='medline', cascade='all, delete-orphan',
-        order_by=Section.__table__.c.seq
-    )
     authors = relation(
         Author, backref='medline', cascade='all, delete-orphan',
         order_by=Author.__table__.c.pos
     )
-    identifiers = relation(
-        Identifier, backref='medline', cascade='all, delete-orphan',
-        collection_class=column_mapped_collection(Identifier.namespace)
+    chemicals = relation(
+        Chemical, backref='medline', cascade='all, delete-orphan',
+        order_by=Chemical.__table__.c.idx
     )
     databases = relation(
         Database, backref='medline', cascade='all, delete-orphan',
-    )
-    chemicals = relation(
-        Chemical, backref='medline', cascade='all, delete-orphan',
-        order_by=Chemical.__table__.c.num
     )
     descriptors = relation(
         Descriptor, backref='medline', cascade='all, delete-orphan',
         order_by=Descriptor.__table__.c.num
     )
+    identifiers = relation(
+        Identifier, backref='medline', cascade='all, delete-orphan',
+        collection_class=column_mapped_collection(Identifier.namespace)
+    )
+    keywords = relation(
+        Keyword, backref='medline', cascade='all, delete-orphan',
+        order_by=(Keyword.__table__.c.owner, Keyword.__table__.c.cnt)
+    )
     qualifiers = relation(Qualifier, backref='medline')
+    sections = relation(
+        Section, backref='medline', cascade='all, delete-orphan',
+        order_by=Section.__table__.c.seq
+    )
 
     pmid = Column(BigInteger, CheckConstraint('pmid > 0'),
                   primary_key=True, autoincrement=False)
@@ -733,12 +793,12 @@ class Medline(_Base):
 
     def __init__(self, pmid: int, status: str, journal: str,
                  created: date, completed: date=None, revised: date=None):
-        assert pmid > 0
-        assert status in Medline.STATES, status
-        assert journal
-        assert isinstance(created, date)
-        assert completed is None or isinstance(completed, date)
-        assert revised is None or isinstance(revised, date)
+        assert pmid > 0, pmid
+        assert status in Medline.STATES, repr(status)
+        assert journal, repr(journal)
+        assert isinstance(created, date), repr(created)
+        assert completed is None or isinstance(completed, date), repr(completed)
+        assert revised is None or isinstance(revised, date), repr(revised)
         self.pmid = pmid
         self.status = status
         self.journal = journal
@@ -887,3 +947,4 @@ class Medline(_Base):
             return set(row[0] for row in conn.execute(query))
         finally:
             conn.close()
+

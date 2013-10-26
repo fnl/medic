@@ -16,7 +16,7 @@ from sqlalchemy.exc import IntegrityError, DatabaseError
 from sqlalchemy.orm import Session
 
 from medic.orm import \
-        Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, Chemical
+        Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, Chemical, Keyword
 from medic.parser import MedlineXMLParser, PubMedXMLParser, Parser
 from medic.web import Download
 
@@ -74,6 +74,7 @@ def dump(files: iter, output_dir: str, unique: bool, update: bool):
         Identifier.__tablename__: open(join(output_dir, "identifiers.tab"), "wt"),
         Database.__tablename__: open(join(output_dir, "databases.tab"), "wt"),
         Chemical.__tablename__: open(join(output_dir, "chemicals.tab"), "wt"),
+        Keyword.__tablename__: open(join(output_dir, "keywords.tab"), "wt"),
         'delete': open(join(output_dir, "delete.txt"), "wt"),
     }
     count = 0

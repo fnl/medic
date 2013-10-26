@@ -6,7 +6,7 @@ from unittest import main, TestCase
 from sqlalchemy.exc import IntegrityError, StatementError
 
 from medic.orm import InitDb, Session, \
-        Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, Chemical
+        Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, Chemical, Keyword
 
 __author__ = 'Florian Leitner'
 
@@ -38,6 +38,8 @@ class MedlineTest(TestCase):
         d = date.today()
         self.assertEqual(Medline(1, 'MEDLINE', 'journal', d),
                          Medline(1, 'MEDLINE', 'journal', d))
+        self.assertNotEqual(Medline(1, 'MEDLINE', 'other', d),
+                            Medline(1, 'MEDLINE', 'journal', d))
 
     def testAssignPmid(self):
         big = 987654321098765432  # up to 18 decimals
@@ -177,16 +179,22 @@ class MedlineTest(TestCase):
                 dict(pmid=1, pos=1, name='Author')
             ],
             Descriptor.__tablename__: [
-                dict(pmid=1, num=1, name='descriptor', major=True)
+                dict(pmid=1, num=1, major=True, name='descriptor')
             ],
             Qualifier.__tablename__: [
-                dict(pmid=1, num=1, sub=1, name='descriptor', major=True)
+                dict(pmid=1, num=1, sub=1, major=True, name='descriptor')
             ],
             Identifier.__tablename__: [
                 dict(pmid=1, namespace='ns', value='id')
             ],
             Database.__tablename__: [
                 dict(pmid=1, name='name', accession='accession')
+            ],
+            Chemical.__tablename__: [
+                dict(pmid=1, idx=1, name='name')
+            ],
+            Keyword.__tablename__: [
+                dict(pmid=1, owner='NLM', cnt=1, major=True, value='name')
             ],
         }
         Medline.insert(data)
@@ -266,6 +274,8 @@ class SectionTest(TestCase):
     def testEquals(self):
         self.assertEqual(Section(1, 1, 'Title', 'The Title'),
                          Section(1, 1, 'Title', 'The Title'))
+        self.assertNotEqual(Section(1, 1, 'Title', 'other'),
+                            Section(1, 1, 'Title', 'The Title'))
 
     def testRequirePmid(self):
         self.assertRaises(TypeError, Section, None, 1, 'Title', 'The Title')
@@ -370,82 +380,85 @@ class DescriptorTest(TestCase):
         self.sess.add(self.M)
 
     def testCreate(self):
-        d = Descriptor(1, 1, 'd_name', True)
+        d = Descriptor(1, 1, 'd_name')
         self.sess.add(d)
         self.sess.commit()
         self.assertEqual(d, self.sess.query(Descriptor).first())
 
     def testEquals(self):
-        self.assertEqual(Descriptor(1, 1, 'd_name', True),
-                         Descriptor(1, 1, 'd_name', True))
+        self.assertEqual(Descriptor(1, 1, 'd_name'),
+                         Descriptor(1, 1, 'd_name'))
+        self.assertNotEqual(Descriptor(1, 1, 'd_name', True),
+                            Descriptor(1, 1, 'd_name', False))
+        self.assertNotEqual(Descriptor(1, 1, 'other'),
+                            Descriptor(1, 1, 'd_name'))
 
     def testRequirePmid(self):
-        self.assertRaises(TypeError, Descriptor, None, 1, 'd_name', True)
-        d = Descriptor(1, 1, 'd_name', True)
+        self.assertRaises(TypeError, Descriptor, None, 1, 'd_name')
+        d = Descriptor(1, 1, 'd_name')
         self.sess.add(d)
         d.pmid = None
         self.assertRaises(IntegrityError, self.sess.commit)
 
     def testRequireExistingPmid(self):
-        self.sess.add(Descriptor(2, 1, 'd_name', True))
+        self.sess.add(Descriptor(2, 1, 'd_name'))
         self.assertRaises(IntegrityError, self.sess.commit)
 
     def testRequireNum(self):
-        self.assertRaises(TypeError, Descriptor, 1, None, 'd_name', True)
-        d = Descriptor(1, 1, 'd_name', True)
+        self.assertRaises(TypeError, Descriptor, 1, None, 'd_name')
+        d = Descriptor(1, 1, 'd_name')
         self.sess.add(d)
         d.num = None
         self.assertRaises(IntegrityError, self.sess.commit)
 
     def testRequireNonZeroNum(self):
-        self.assertRaises(AssertionError, Descriptor, 1, 0, 'd_name', True)
-        d = Descriptor(1, 1, 'd_name', True)
+        self.assertRaises(AssertionError, Descriptor, 1, 0, 'd_name')
+        d = Descriptor(1, 1, 'd_name')
         self.sess.add(d)
         d.num = 0
         self.assertRaises(IntegrityError, self.sess.commit)
 
     def testRequireNonNegativeNum(self):
-        self.assertRaises(AssertionError, Descriptor, 1, -1, 'd_name', True)
-        d = Descriptor(1, 1, 'd_name', True)
+        self.assertRaises(AssertionError, Descriptor, 1, -1, 'd_name')
+        d = Descriptor(1, 1, 'd_name')
         self.sess.add(d)
         d.num = -1
         self.assertRaises(IntegrityError, self.sess.commit)
 
     def testRequireName(self):
-        self.assertRaises(AssertionError, Descriptor, 1, 1, '', True)
-        d = Descriptor(1, 1, 'd_name', True)
+        self.assertRaises(AssertionError, Descriptor, 1, 1, '')
+        d = Descriptor(1, 1, 'd_name')
         self.sess.add(d)
         d.name = ''
         self.assertRaises(IntegrityError, self.sess.commit)
 
     def testRequireMajor(self):
-        # noinspection PyTypeChecker
         self.sess.add(Descriptor(1, 1, 'd_name', None))
         self.assertRaises(IntegrityError, self.sess.commit)
 
     def testToString(self):
-        self.assertEqual('1\t1\tmajor\tT\n', str(Descriptor(1, 1, 'major', True)))
-        self.assertEqual('1\t1\tminor\tF\n', str(Descriptor(1, 1, 'minor', False)))
+        self.assertEqual('1\t1\tT\tmajor\n', str(Descriptor(1, 1, 'major', True)))
+        self.assertEqual('1\t1\tF\tminor\n', str(Descriptor(1, 1, 'minor')))
 
     def testToRepr(self):
-        self.assertEqual('Descriptor<1:2>', repr(Descriptor(1, 2, 'name', True)))
+        self.assertEqual('Descriptor<1:2>', repr(Descriptor(1, 2, 'name')))
 
     def testMedlineRelations(self):
-        d = Descriptor(1, 1, 'name', True)
+        d = Descriptor(1, 1, 'name')
         self.sess.add(d)
         self.sess.commit()
         self.assertListEqual([d], self.M.descriptors)
 
     def testDescriptorRelations(self):
-        d = Descriptor(1, 1, 'name', True)
+        d = Descriptor(1, 1, 'name')
         self.sess.add(d)
         self.sess.commit()
         self.assertEqual(self.M, d.medline)
 
     def testSelect(self):
-        self.sess.add(Descriptor(1, 1, 'd1', True))
-        self.sess.add(Descriptor(1, 2, 'd2', False))
-        self.sess.add(Descriptor(1, 3, 'd3', True))
+        self.sess.add(Descriptor(1, 1, 'd1'))
+        self.sess.add(Descriptor(1, 2, 'd2'))
+        self.sess.add(Descriptor(1, 3, 'd3'))
         self.sess.commit()
         for row in Descriptor.select(1, ['num', 'name']):
             if row['num'] == 1:
@@ -458,18 +471,18 @@ class DescriptorTest(TestCase):
                 self.fail(str(row))
 
     def testSelectAll(self):
-        self.sess.add(Descriptor(1, 1, 'd1', True))
-        self.sess.add(Descriptor(1, 2, 'd2', False))
-        self.sess.add(Descriptor(1, 3, 'd3', True))
+        self.sess.add(Descriptor(1, 1, 'd1'))
+        self.sess.add(Descriptor(1, 2, 'd2'))
+        self.sess.add(Descriptor(1, 3, 'd3'))
         self.sess.commit()
         for row in Descriptor.selectAll(1):
             if row['num'] == 1:
                 self.assertEqual(row['name'], 'd1')
-            elif row[1] == 2:
+            elif row['num'] == 2:
                 # noinspection PyUnresolvedReferences
                 self.assertFalse(row[Descriptor.major.name])
-            elif row[1] == 3:
-                self.assertEqual(row[2], 'd3')
+            elif row['num'] == 3:
+                self.assertEqual(row['name'], 'd3')
             else:
                 self.fail(str(row))
 
@@ -484,57 +497,61 @@ class QualifierTest(TestCase):
         self.sess.add(self.D)
 
     def testCreate(self):
-        q = Qualifier(1, 1, 1, 'q_name', True)
+        q = Qualifier(1, 1, 1, 'q_name')
         self.sess.add(q)
         self.sess.commit()
         self.assertEqual(q, self.sess.query(Qualifier).first())
 
     def testEquals(self):
-        self.assertEqual(Qualifier(1, 1, 1, 'q_name', True),
-                         Qualifier(1, 1, 1, 'q_name', True))
+        self.assertEqual(Qualifier(1, 1, 1, 'q_name'),
+                         Qualifier(1, 1, 1, 'q_name'))
+        self.assertNotEqual(Qualifier(1, 1, 1, 'q_name', True),
+                            Qualifier(1, 1, 1, 'q_name'))
+        self.assertNotEqual(Qualifier(1, 1, 1, 'other'),
+                            Qualifier(1, 1, 1, 'q_name'))
 
     def testRequirePmid(self):
-        self.assertRaises(TypeError, Qualifier, None, 1, 1, 'q_name', True)
-        q = Qualifier(1, 1, 1, 'q_name', True)
+        self.assertRaises(TypeError, Qualifier, None, 1, 1, 'q_name')
+        q = Qualifier(1, 1, 1, 'q_name')
         self.sess.add(q)
         q.pmid = None
         self.assertRaises(IntegrityError, self.sess.commit)
 
     def testRequireNum(self):
-        self.assertRaises(TypeError, Qualifier, 1, None, 1, 'q_name', True)
-        q = Qualifier(1, 1, 1, 'q_name', True)
+        self.assertRaises(TypeError, Qualifier, 1, None, 1, 'q_name')
+        q = Qualifier(1, 1, 1, 'q_name')
         self.sess.add(q)
         q.num = None
         self.assertRaises(IntegrityError, self.sess.commit)
 
     def testRequireExistingDescriptor(self):
-        self.sess.add(Qualifier(1, 2, 1, 'q_name', True))
+        self.sess.add(Qualifier(1, 2, 1, 'q_name'))
         self.assertRaises(IntegrityError, self.sess.commit)
 
     def testRequireSub(self):
-        self.assertRaises(TypeError, Qualifier, 1, 1, None, 'q_name', True)
-        q = Qualifier(1, 1, 1, 'q_name', True)
+        self.assertRaises(TypeError, Qualifier, 1, 1, None, 'q_name')
+        q = Qualifier(1, 1, 1, 'q_name')
         self.sess.add(q)
         q.sub = None
         self.assertRaises(IntegrityError, self.sess.commit)
 
     def testRequireNonZeroSub(self):
-        self.assertRaises(AssertionError, Qualifier, 1, 1, 0, 'q_name', True)
-        q = Qualifier(1, 1, 1, 'q_name', True)
+        self.assertRaises(AssertionError, Qualifier, 1, 1, 0, 'q_name')
+        q = Qualifier(1, 1, 1, 'q_name')
         self.sess.add(q)
         q.sub = 0
         self.assertRaises(IntegrityError, self.sess.commit)
 
     def testRequireNonNegativeSub(self):
-        self.assertRaises(AssertionError, Qualifier, 1, 1, -1, 'q_name', True)
-        q = Qualifier(1, 1, 1, 'q_name', True)
+        self.assertRaises(AssertionError, Qualifier, 1, 1, -1, 'q_name')
+        q = Qualifier(1, 1, 1, 'q_name')
         self.sess.add(q)
         q.sub = -1
         self.assertRaises(IntegrityError, self.sess.commit)
 
     def testRequireName(self):
-        self.assertRaises(AssertionError, Qualifier, 1, 1, 1, '', True)
-        q = Qualifier(1, 1, 1, 'q_name', True)
+        self.assertRaises(AssertionError, Qualifier, 1, 1, 1, '')
+        q = Qualifier(1, 1, 1, 'q_name')
         self.sess.add(q)
         q.name = ''
         self.assertRaises(IntegrityError, self.sess.commit)
@@ -545,29 +562,29 @@ class QualifierTest(TestCase):
         self.assertRaises(IntegrityError, self.sess.commit)
 
     def testToString(self):
-        self.assertEqual('1\t1\t1\tmajor\tT\n', str(Qualifier(1, 1, 1, 'major', True)))
-        self.assertEqual('1\t1\t1\tminor\tF\n', str(Qualifier(1, 1, 1, 'minor', False)))
+        self.assertEqual('1\t1\t1\tT\tmajor\n', str(Qualifier(1, 1, 1, 'major', True)))
+        self.assertEqual('1\t1\t1\tF\tminor\n', str(Qualifier(1, 1, 1, 'minor')))
 
     def testToRepr(self):
-        self.assertEqual('Qualifier<1:2:3>', repr(Qualifier(1, 2, 3, 'name', True)))
+        self.assertEqual('Qualifier<1:2:3>', repr(Qualifier(1, 2, 3, 'name')))
 
     def testMedlineRelations(self):
-        q = Qualifier(1, 1, 1, 'name', True)
+        q = Qualifier(1, 1, 1, 'name')
         self.sess.add(q)
         self.sess.commit()
         self.assertListEqual([q], self.M.qualifiers)
 
     def testQualifierRelations(self):
-        q = Qualifier(1, 1, 1, 'name', True)
+        q = Qualifier(1, 1, 1, 'name')
         self.sess.add(q)
         self.sess.commit()
         self.assertEqual(self.M, q.medline)
         self.assertEqual(self.D, q.descriptor)
 
     def testSelect(self):
-        self.sess.add(Qualifier(1, 1, 1, 'q1', True))
-        self.sess.add(Qualifier(1, 1, 2, 'q2', False))
-        self.sess.add(Qualifier(1, 1, 3, 'q3', True))
+        self.sess.add(Qualifier(1, 1, 1, 'q1'))
+        self.sess.add(Qualifier(1, 1, 2, 'q2'))
+        self.sess.add(Qualifier(1, 1, 3, 'q3'))
         self.sess.commit()
         for row in Qualifier.select((1, 1), ['sub', 'name']):
             if row['sub'] == 1:
@@ -580,18 +597,17 @@ class QualifierTest(TestCase):
                 self.fail(str(row))
 
     def testSelectAll(self):
-        self.sess.add(Qualifier(1, 1, 1, 'q1', True))
-        self.sess.add(Qualifier(1, 1, 2, 'q2', False))
-        self.sess.add(Qualifier(1, 1, 3, 'q3', True))
+        self.sess.add(Qualifier(1, 1, 1, 'q1'))
+        self.sess.add(Qualifier(1, 1, 2, 'q2'))
+        self.sess.add(Qualifier(1, 1, 3, 'q3'))
         self.sess.commit()
         for row in Qualifier.selectAll((1, 1)):
             if row['sub'] == 1:
                 self.assertEqual(row['name'], 'q1')
-            elif row[2] == 2:
-                # noinspection PyUnresolvedReferences
+            elif row['sub'] == 2:
                 self.assertFalse(row[Qualifier.major.name])
-            elif row[2] == 3:
-                self.assertEqual(row[3], 'q3')
+            elif row['sub'] == 3:
+                self.assertEqual(row['name'], 'q3')
             else:
                 self.fail(str(row))
 
@@ -612,6 +628,8 @@ class AuthorTest(TestCase):
     def testEquals(self):
         self.assertEqual(Author(1, 1, 'last'),
                          Author(1, 1, 'last'))
+        self.assertNotEqual(Author(1, 1, 'other'),
+                            Author(1, 1, 'last'))
 
     def testRequirePmid(self):
         self.assertRaises(TypeError, Author, None, 1, 'last')
@@ -731,6 +749,8 @@ class IdentifierTest(TestCase):
     def testEquals(self):
         self.assertEqual(Identifier(1, 'ns', 'id'),
                          Identifier(1, 'ns', 'id'))
+        self.assertNotEqual(Identifier(1, 'ns', 'other'),
+                            Identifier(1, 'ns', 'id'))
 
     def testRequireNamespace(self):
         self.assertRaises(AssertionError, Identifier, 1, None, 'id')
@@ -826,6 +846,8 @@ class DatabaseTest(TestCase):
     def testEquals(self):
         self.assertEqual(Database(1, 'name', 'accession'),
                          Database(1, 'name', 'accession'))
+        self.assertNotEqual(Database(1, 'name', 'other'),
+                         Database(1, 'name', 'accession'))
 
     def testRequireName(self):
         self.assertRaises(AssertionError, Database, 1, None, 'accession')
@@ -882,49 +904,163 @@ class ChemicalTest(TestCase):
         self.sess.add(self.M)
 
     def testCreate(self):
-        i = Chemical(1, 1, 'uid', 'name')
+        i = Chemical(1, 1, 'name')
         self.sess.add(i)
         self.sess.commit()
         self.assertEqual(i, self.sess.query(Chemical).first())
 
     def testEquals(self):
-        self.assertEqual(Chemical(1, 1, 'uid', 'name'),
-                         Chemical(1, 1, 'uid', 'name'))
+        self.assertEqual(Chemical(1, 1, 'name', 'uid'),
+                         Chemical(1, 1, 'name', 'uid'))
+        self.assertNotEqual(Chemical(1, 1, 'name', 'other'),
+                         Chemical(1, 1, 'name', 'uid'))
+        self.assertNotEqual(Chemical(1, 1, 'other'),
+                         Chemical(1, 1, 'name'))
+
+    def testRequireIdx(self):
+        self.assertRaises(TypeError, Chemical, 1, None, 'name')
+        c = Chemical(1, 1, 'name')
+        self.sess.add(c)
+        c.idx = None
+        self.assertRaises(IntegrityError, self.sess.commit)
+
+    def testRequireNonZeroIdx(self):
+        self.assertRaises(AssertionError, Chemical, 1, 0, 'name')
+        c = Chemical(1, 1, 'name')
+        self.sess.add(c)
+        c.idx = 0
+        self.assertRaises(IntegrityError, self.sess.commit)
+
+    def testRequireNonNegativeIdx(self):
+        self.assertRaises(AssertionError, Chemical, 1, -1, 'name')
+        c = Chemical(1, 1, 'name')
+        self.sess.add(c)
+        c.idx = -1
+        self.assertRaises(IntegrityError, self.sess.commit)
 
     def testUidNotRequired(self):
-        self.assertEqual(Chemical(1, 1, '', 'name'),
-                         Chemical(1, 1, '', 'name'))
-        self.assertEqual(Chemical(1, 1, None, 'name'),
-                         Chemical(1, 1, None, 'name'))
+        self.assertEqual(Chemical(1, 1, 'name', ''),
+                         Chemical(1, 1, 'name', ''))
+        self.assertEqual(Chemical(1, 1, 'name', None),
+                         Chemical(1, 1, 'name', None))
+        self.assertEqual(Chemical(1, 1, 'name'),
+                         Chemical(1, 1, 'name'))
 
     def testRequireNonEmptyName(self):
-        self.assertRaises(AssertionError, Chemical, 1, 1, 'uid', '')
-        db = Chemical(1, 1, 'uid', 'name')
+        self.assertRaises(AssertionError, Chemical, 1, 1, '')
+        db = Chemical(1, 1, 'name')
         self.sess.add(db)
         db.name = ''
         self.assertRaises(IntegrityError, self.sess.commit)
 
     def testRequireName(self):
-        self.assertRaises(AssertionError, Chemical, 1, 1, 'uid', None)
-        m = Chemical(1, 1, 'uid', 'name')
+        self.assertRaises(AssertionError, Chemical, 1, 1, None)
+        m = Chemical(1, 1, 'name')
         self.sess.add(m)
         m.name = None
         self.assertRaises(IntegrityError, self.sess.commit)
 
     def testToString(self):
-        self.assertEqual('1\t1\tuid\tname\n', str(Chemical(1, 1, 'uid', 'name')))
+        self.assertEqual('1\t1\tuid\tname\n', str(Chemical(1, 1, 'name', 'uid')))
 
     def testToRepr(self):
-        self.assertEqual('Chemical<1:1>', repr(Chemical(1, 1, None, 'name')))
+        self.assertEqual('Chemical<1:1>', repr(Chemical(1, 1, 'name')))
 
-    def testMedlineRelations(self):
-        i = Chemical(1, 1, 'uid', 'name')
+    def testMedlineRelation(self):
+        i = Chemical(1, 1, 'name')
         self.sess.add(i)
         self.sess.commit()
         self.assertEqual([i], self.M.chemicals)
 
-    def testIdentifierRelations(self):
-        i = Chemical(1, 1, 'uid', 'name')
+    def testChemicalsRelation(self):
+        i = Chemical(1, 1, 'name')
+        self.sess.add(i)
+        self.sess.commit()
+        self.assertEqual(self.M, i.medline)
+
+
+class KeywordTest(TestCase):
+    def setUp(self):
+        InitDb(URI, module=dbapi2)
+        self.sess = Session()
+        self.M = Medline(1, 'MEDLINE', 'Journal', date.today())
+        self.sess.add(self.M)
+
+    def testCreate(self):
+        i = Keyword(1, 'NASA', 1, 'name')
+        self.sess.add(i)
+        self.sess.commit()
+        self.assertEqual(i, self.sess.query(Keyword).first())
+
+    def testEquals(self):
+        self.assertEqual(Keyword(1, 'NASA', 1, 'name'),
+                         Keyword(1, 'NASA', 1, 'name'))
+        self.assertNotEqual(Keyword(1, 'NASA', 1, 'other'),
+                            Keyword(1, 'NASA', 1, 'name'))
+        self.assertNotEqual(Keyword(1, 'NASA', 1, 'name', True),
+                            Keyword(1, 'NASA', 1, 'name'))
+
+    def testRequireValidOwner(self):
+        self.assertRaises(AssertionError, Keyword, 1, 'WRONG', None, 'name')
+        k = Keyword(1, 'NASA', 1, 'name')
+        self.sess.add(k)
+        k.owner = 'WRONG'
+        self.assertRaises(IntegrityError, self.sess.commit)
+
+    def testRequireCnt(self):
+        self.assertRaises(TypeError, Keyword, 1, 'NASA', None, 'name')
+        k = Keyword(1, 'NASA', 1, 'name')
+        self.sess.add(k)
+        k.cnt = None
+        self.assertRaises(IntegrityError, self.sess.commit)
+
+    def testRequireNonZeroCnt(self):
+        self.assertRaises(AssertionError, Keyword, 1, 'NASA', 0, 'name')
+        k = Keyword(1, 'NASA', 1, 'name')
+        self.sess.add(k)
+        k.cnt = 0
+        self.assertRaises(IntegrityError, self.sess.commit)
+
+    def testRequireNonNegativeCnt(self):
+        self.assertRaises(AssertionError, Keyword, 1, 'NASA', -1, 'name')
+        k = Keyword(1, 'NASA', 1, 'name')
+        self.sess.add(k)
+        k.cnt = -1
+        self.assertRaises(IntegrityError, self.sess.commit)
+
+    def testRequireMajor(self):
+        self.sess.add(Keyword(1, 'NLM', 1, 'name', None))
+        self.assertRaises(IntegrityError, self.sess.commit)
+
+    def testRequireNonEmptyValue(self):
+        self.assertRaises(AssertionError, Keyword, 1, 'NASA', 1, '')
+        k = Keyword(1, 'NASA', 1, 'name')
+        self.sess.add(k)
+        k.value = ''
+        self.assertRaises(IntegrityError, self.sess.commit)
+
+    def testRequireValue(self):
+        self.assertRaises(AssertionError, Keyword, 1, 'NASA', 1, None)
+        k = Keyword(1, 'NASA', 1, 'name')
+        self.sess.add(k)
+        k.value = None
+        self.assertRaises(IntegrityError, self.sess.commit)
+
+    def testToString(self):
+        self.assertEqual('1\tNASA\t1\tF\tname\n', str(Keyword(1, 'NASA', 1, 'name')))
+        self.assertEqual('1\tNASA\t1\tT\tname\n', str(Keyword(1, 'NASA', 1, 'name', True)))
+
+    def testToRepr(self):
+        self.assertEqual('Keyword<1:NASA:1>', repr(Keyword(1, 'NASA', 1, 'name')))
+
+    def testMedlineRelation(self):
+        i = Keyword(1, 'NASA', 1, 'name')
+        self.sess.add(i)
+        self.sess.commit()
+        self.assertEqual([i], self.M.keywords)
+
+    def testKeywordsRelation(self):
+        i = Keyword(1, 'NASA', 1, 'name')
         self.sess.add(i)
         self.sess.commit()
         self.assertEqual(self.M, i.medline)
