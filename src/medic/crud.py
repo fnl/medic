@@ -15,8 +15,8 @@ from os.path import join
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from sqlalchemy.orm import Session
 
-from medic.orm import \
-        Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, Chemical, Keyword
+from medic.orm import Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, \
+        Chemical, Keyword, PublicationType
 from medic.parser import MedlineXMLParser, PubMedXMLParser, Parser
 from medic.web import Download
 
@@ -73,6 +73,7 @@ def dump(files: iter, output_dir: str, unique: bool, update: bool):
         Author.__tablename__: open(join(output_dir, "authors.tab"), "wt"),
         Identifier.__tablename__: open(join(output_dir, "identifiers.tab"), "wt"),
         Database.__tablename__: open(join(output_dir, "databases.tab"), "wt"),
+        PublicationType.__tablename__: open(join(output_dir, "publication_types.tab"), "wt"),
         Chemical.__tablename__: open(join(output_dir, "chemicals.tab"), "wt"),
         Keyword.__tablename__: open(join(output_dir, "keywords.tab"), "wt"),
         'delete': open(join(output_dir, "delete.txt"), "wt"),
@@ -204,15 +205,16 @@ def _collectCitation(stream: iter) -> iter:
 
 def _handleCitation(handle, instances: list):
     "Handle a list of instances representing a citation."
-    # handle Medline first:
-    for idx in range(len(instances)):
+    # handle the Medline object first:
+    for idx in range(len(instances) - 1, -1, -1):
         if isinstance(instances[idx], Medline):
+            logger.debug('handling PMID %s', instances[idx].pmid)
             handle(instances.pop(idx))
             break
 
     # and everythin else after that:
-    while instances:
-        handle(instances.pop())
+    for i in instances:
+        handle(i)
 
     return 1
 
