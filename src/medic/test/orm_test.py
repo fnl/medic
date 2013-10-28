@@ -1,3 +1,4 @@
+from collections import namedtuple
 from datetime import timedelta, date
 from sqlite3 import dbapi2
 from sqlalchemy.engine.url import URL
@@ -5,8 +6,8 @@ from unittest import main, TestCase
 
 from sqlalchemy.exc import IntegrityError, StatementError
 
-from medic.orm import InitDb, Session, \
-        Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, Chemical, Keyword
+from medic.orm import InitDb, Session, Medline, Section, Author, Descriptor, Qualifier, \
+        Database, Identifier, Chemical, Keyword, PublicationType
 
 __author__ = 'Florian Leitner'
 
@@ -23,25 +24,66 @@ class InitdbTest(TestCase):
         self.assertEqual('sqlite', Session().connection().dialect.name)
 
 
-class MedlineTest(TestCase):
+class TestMixin:
+    def assertBadExtraValue(self, error, field, value):
+        self.assertRaises(error, self.klass, *self.defaults, **{field: value})
+        instance = self.klass(*self.defaults)
+        self.sess.add(instance)
+        setattr(instance, field, value)
+        self.assertRaises(StatementError, self.sess.commit)
+
+    def assertBadValue(self, value, error, field):
+        bad_values = self.defaults._replace(**{field: value})
+        self.assertRaises(error, self.klass, *bad_values)
+        instance = self.klass(*self.defaults)
+        self.sess.add(instance)
+        setattr(instance, field, value)
+        self.assertRaises(IntegrityError, self.sess.commit)
+
+    def assertNonNullValue(self, error, field):
+        self.assertBadValue(None, error, field)
+
+    def assertNonEmptyValue(self, error, field):
+        self.assertBadValue('', error, field)
+
+    def assertPositiveValue(self, error, field):
+        self.assertBadValue(0, error, field)
+        self.sess.rollback()
+        self.assertBadValue(-1, error, field)
+
+    def assertSame(self):
+        self.assertEqual(self.klass(*self.entity(*self.defaults)),
+                         self.klass(*self.entity(*self.defaults)))
+
+    def assertCreate(self):
+        instance = self.klass(*self.defaults)
+        self.sess.add(instance)
+        self.sess.commit()
+        self.assertEqual(instance, self.sess.query(self.klass).first())
+
+
+    def assertDifference(self, **values):
+        self.assertNotEqual(self.klass(*self.defaults._replace(**values)),
+                            self.klass(*self.defaults))
+
+class MedlineTest(TestCase, TestMixin):
     def setUp(self):
         InitDb(URI, module=dbapi2)
         self.sess = Session()
+        self.klass = Medline
+        self.entity = namedtuple('Medline', 'pmid status journal created')
+        self.defaults = self.entity(1, 'MEDLINE', 'journal', date.today())
 
     def testCreate(self):
-        r = Medline(1, 'MEDLINE', 'journal', date.today())
-        self.sess.add(r)
-        self.sess.commit()
-        self.assertEqual(r, self.sess.query(Medline).first())
+        self.assertCreate()
 
     def testEquals(self):
-        d = date.today()
-        self.assertEqual(Medline(1, 'MEDLINE', 'journal', d),
-                         Medline(1, 'MEDLINE', 'journal', d))
-        self.assertNotEqual(Medline(1, 'MEDLINE', 'other', d),
-                            Medline(1, 'MEDLINE', 'journal', d))
+        self.assertSame()
+        self.assertDifference(pmid=2)
+        self.assertDifference(status='In-Data-Review')
+        self.assertDifference(journal='other')
 
-    def testAssignPmid(self):
+    def testBigPmids(self):
         big = 987654321098765432  # up to 18 decimals
         r = Medline(big, 'MEDLINE', 'journal', date.today())
         self.sess.add(r)
@@ -49,94 +91,60 @@ class MedlineTest(TestCase):
         self.assertEqual(big, r.pmid)
         self.assertEqual(big, self.sess.query(Medline).first().pmid)
 
-    def testRequireNonZeroPmid(self):
-        self.assertRaises(AssertionError, Medline,
-                          0, 'MEDLINE', 'journal', date.today())
-        m = Medline(1, 'MEDLINE', 'journal', date.today())
-        self.sess.add(m)
-        m.pmid = 0
-        self.assertRaises(IntegrityError, self.sess.commit)
+    # PMID
 
-    def testRequireNonNegativePmid(self):
-        self.assertRaises(AssertionError, Medline,
-                          -1, 'MEDLINE', 'journal', date.today())
-        m = Medline(2, 'MEDLINE', 'journal', date.today())
-        self.sess.add(m)
-        m.pmid = -1
-        self.assertRaises(IntegrityError, self.sess.commit)
+    def testRequirePmid(self):
+        self.assertNonNullValue(TypeError, 'pmid')
+
+    def testRequirePositivePmid(self):
+        self.assertPositiveValue(AssertionError, 'pmid')
+
+    # STATUS
+
+    def testRequireStatus(self):
+        self.assertNonNullValue(AssertionError, 'status')
+
+    def testRequireValidStatus(self):
+        self.assertBadValue('invalid', AssertionError, 'status')
 
     def testValidStatusNames(self):
         d = date.today()
-        for n in Medline.STATES:
-            Medline(1, n, 'journal', d)
+
+        for pmid, status in enumerate(Medline.STATES):
+            self.sess.add(Medline(pmid + 1, status, 'journal', d))
+            self.sess.commit()
+
         self.assertTrue(True)
 
-    def testRequireStatus(self):
-        self.assertRaises(AssertionError, Medline,
-                          1, None, 'journal', date.today())
-        m = Medline(1, 'MEDLINE', 'journal', date.today())
-        self.sess.add(m)
-        m.status = None
-        self.assertRaises(IntegrityError, self.sess.commit)
-
-    def testRequireNonEmptyStatus(self):
-        self.assertRaises(AssertionError, Medline,
-                          1, '', 'journal', date.today())
-        m = Medline(1, 'MEDLINE', 'journal', date.today())
-        self.sess.add(m)
-        m.status = ''
-        self.assertRaises(IntegrityError, self.sess.commit)
-
-    def testRequireValidStatus(self):
-        self.assertRaises(AssertionError, Medline,
-                          1, 'invalid', 'journal', date.today())
-        m = Medline(1, 'MEDLINE', 'journal', date.today())
-        self.sess.add(m)
-        m.status = 'invalid'
-        self.assertRaises(IntegrityError, self.sess.commit)
+    # JOURNAL
 
     def testRequireJournal(self):
-        self.assertRaises(AssertionError, Medline,
-                          1, 'MEDLINE', None, date.today())
-        m = Medline(1, 'MEDLINE', 'journal', date.today())
-        self.sess.add(m)
-        m.journal = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(AssertionError, 'journal')
 
     def testRequireNonEmptyJournal(self):
-        self.assertRaises(AssertionError, Medline,
-                          1, 'MEDLINE', '', date.today())
-        m = Medline(1, 'MEDLINE', 'journal', date.today())
-        self.sess.add(m)
-        m.journal = ''
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonEmptyValue(AssertionError, 'journal')
+
+    # CREATED
 
     def testRequireCreated(self):
-        self.assertRaises(AssertionError, Medline,
-                          1, 'MEDLINE', 'journal', None)
-        m = Medline(1, 'MEDLINE', 'journal', date.today())
-        self.sess.add(m)
-        m.created = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(AssertionError, 'created')
+
+    # COMPLETED
 
     def testRequireCompletedDateOrNone(self):
-        self.assertRaises(AssertionError, Medline,
-                          1, 'MEDLINE', 'journal', date.today(), completed='')
-        m = Medline(1, 'MEDLINE', 'journal', date.today())
-        m.completed = date.today()
-        self.sess.add(m)
-        self.sess.commit()
-        m.completed = ''
-        self.assertRaises(StatementError, self.sess.commit)
+        self.assertBadExtraValue(AssertionError, 'completed', '')
+
+    # REVISED
 
     def testRequireRevisedDateOrNone(self):
-        self.assertRaises(AssertionError, Medline,
-                          1, 'MEDLINE', 'journal', date.today(), revised='')
-        m = Medline(1, 'MEDLINE', 'journal', date.today())
-        m.revised = date.today()
+        self.assertBadExtraValue(AssertionError, 'revised', '')
+
+    # MODIFIED
+
+    def testRequireModifiedDateOrNone(self):
+        m = Medline(*self.defaults)
+        m.modified = ''
         self.sess.add(m)
-        self.sess.commit()
-        m.revised = ''
         self.assertRaises(StatementError, self.sess.commit)
 
     def testAutomaticModified(self):
@@ -156,6 +164,8 @@ class MedlineTest(TestCase):
         self.sess.add(m2)
         self.sess.commit()
         self.assertListEqual([2], list(Medline.modifiedBefore([1, 2], date.today())))
+
+    # METHODS
 
     def testToString(self):
         d = date.today()
@@ -198,8 +208,10 @@ class MedlineTest(TestCase):
             ],
         }
         Medline.insert(data)
+
         for m in self.sess.query(Medline):
             self.assertEqual(1, m.pmid)
+
         for t in Medline.CHILDREN:
             self.assertEqual(1, list(self.sess.query(t))[0].pmid)
 
@@ -212,11 +224,13 @@ class MedlineTest(TestCase):
         ]}
         Medline.insert(data)
         count = 0
+
         for m in self.sess.query(Medline):
             if m.pmid not in (1, 2, 3):
                 self.fail(m)
             else:
                 count += 1
+
         self.assertEqual(3, count)
 
     def addThree(self, d):
@@ -258,96 +272,64 @@ class MedlineTest(TestCase):
         self.assertListEqual([1, 3], list(Medline.existing([1, 3, 5])))
 
 
-class SectionTest(TestCase):
+class SectionTest(TestCase, TestMixin):
     def setUp(self):
         InitDb(URI, module=dbapi2)
         self.sess = Session()
         self.M = Medline(1, 'MEDLINE', 'Journal', date.today())
         self.sess.add(self.M)
+        self.klass = Section
+        self.entity = namedtuple('Section', 'pmid seq name content')
+        self.defaults = self.entity(1, 1, 'Title', 'The Title')
 
     def testCreate(self):
-        a = Section(1, 1, 'Title', 'The Title')
-        self.sess.add(a)
-        self.sess.commit()
-        self.assertEqual(a, self.sess.query(Section).first())
+        self.assertCreate()
 
     def testEquals(self):
-        self.assertEqual(Section(1, 1, 'Title', 'The Title'),
-                         Section(1, 1, 'Title', 'The Title'))
-        self.assertNotEqual(Section(1, 1, 'Title', 'other'),
-                            Section(1, 1, 'Title', 'The Title'))
+        self.assertSame()
+        self.assertDifference(content='other')
+        self.assertDifference(name='other')
+        self.assertDifference(seq=2)
+
+    # PMID
 
     def testRequirePmid(self):
-        self.assertRaises(TypeError, Section, None, 1, 'Title', 'The Title')
-        s = Section(1, 1, 'Title', 'The Title')
-        self.sess.add(s)
-        s.pmid = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(TypeError, 'pmid')
 
     def testRequireExistingPmid(self):
         self.sess.add(Section(2, 1, 'Title', 'The Title'))
         self.assertRaises(IntegrityError, self.sess.commit)
 
-    def testRequireSeq(self):
-        self.assertRaises(TypeError, Section, 1, None, 'Title', 'The Title')
-        s = Section(1, 1, 'Title', 'The Title')
-        self.sess.add(s)
-        s.seq = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+    # SEQ
 
-    def testRequireNonZeroSeq(self):
-        self.assertRaises(AssertionError, Section, 1, 0, 'Title', 'The Title')
-        s = Section(1, 1, 'Title', 'The Title')
-        self.sess.add(s)
-        s.seq = 0
-        self.assertRaises(IntegrityError, self.sess.commit)
+    def testRequireSeq(self):
+        self.assertNonNullValue(TypeError, 'seq')
 
     def testRequirePositiveSeq(self):
-        self.assertRaises(AssertionError, Section, 1, -1, 'Title', 'The Title')
-        s = Section(1, 1, 'Title', 'The Title')
-        self.sess.add(s)
-        s.seq = -1
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertPositiveValue(AssertionError, 'seq')
 
-    def testValidSectionNames(self):
-        for s in Section.SECTIONS:
-            Section(1, 1, s, 'text')
-        self.assertTrue(True)
+    # NAME
 
     def testRequireSectionName(self):
-        self.assertRaises(AssertionError, Section, 1, 1, None, 'text')
-        s = Section(1, 1, 'Title', 'The Title')
-        self.sess.add(s)
-        s.name = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(AssertionError, 'name')
 
     def testRequireNonEmptySectionName(self):
-        self.assertRaises(AssertionError, Section, 1, 1, '', 'text')
-        s = Section(1, 1, 'Title', 'The Title')
-        self.sess.add(s)
-        s.name = ''
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonEmptyValue(AssertionError, 'name')
 
-    def testRequireValidSectionName(self):
-        self.assertRaises(AssertionError, Section, 1, 1, 'invalid', 'text')
-        s = Section(1, 1, 'Title', 'The Title')
-        self.sess.add(s)
-        s.name = 'invalid'
-        self.assertRaises(IntegrityError, self.sess.commit)
+    # CONTENT
 
     def testRequireContent(self):
-        self.assertRaises(AssertionError, Section, 1, 1, 'Title', None)
-        m = Section(1, 1, 'Title', 'txt')
-        self.sess.add(m)
-        m.content = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(AssertionError, 'content')
 
     def testRequireNonEmptyContent(self):
-        self.assertRaises(AssertionError, Section, 1, 1, 'Title', '')
-        m = Section(1, 1, 'Title', 'txt')
-        self.sess.add(m)
-        m.content = ''
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonEmptyValue(AssertionError, 'content')
+
+    # LABEL
+
+    def testNonEmptyLabel(self):
+        self.assertBadExtraValue(AssertionError, 'label', '')
+
+    # METHODS
 
     def testToString(self):
         self.assertEqual('1\t1\tTitle\tlabel\t"co\\n\\tent"\\\\\n',
@@ -364,77 +346,62 @@ class SectionTest(TestCase):
         self.sess.add(abstract)
         self.sess.commit()
         self.assertListEqual([title, abstract], self.M.sections)
-
-    def testSectionRelations(self):
-        s = Section(1, 1, 'Title', 'The Title')
-        self.sess.add(s)
-        self.sess.commit()
-        self.assertEqual(self.M, s.medline)
+        self.assertEqual(self.M, title.medline)
+        self.assertEqual(self.M, abstract.medline)
 
 
-class DescriptorTest(TestCase):
+class DescriptorTest(TestCase, TestMixin):
     def setUp(self):
         InitDb(URI, module=dbapi2)
         self.sess = Session()
         self.M = Medline(1, 'MEDLINE', 'Journal', date.today())
         self.sess.add(self.M)
+        self.klass = Descriptor
+        self.entity = namedtuple('Descriptor', 'pmid num name')
+        self.defaults = self.entity(1, 1, 'name')
 
     def testCreate(self):
-        d = Descriptor(1, 1, 'd_name')
-        self.sess.add(d)
-        self.sess.commit()
-        self.assertEqual(d, self.sess.query(Descriptor).first())
+        self.assertCreate()
 
     def testEquals(self):
-        self.assertEqual(Descriptor(1, 1, 'd_name'),
-                         Descriptor(1, 1, 'd_name'))
+        self.assertSame()
+        self.assertDifference(name='other')
+        self.assertDifference(num=2)
         self.assertNotEqual(Descriptor(1, 1, 'd_name', True),
                             Descriptor(1, 1, 'd_name', False))
-        self.assertNotEqual(Descriptor(1, 1, 'other'),
-                            Descriptor(1, 1, 'd_name'))
+
+    # PMID
 
     def testRequirePmid(self):
-        self.assertRaises(TypeError, Descriptor, None, 1, 'd_name')
-        d = Descriptor(1, 1, 'd_name')
-        self.sess.add(d)
-        d.pmid = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(TypeError, 'pmid')
 
     def testRequireExistingPmid(self):
         self.sess.add(Descriptor(2, 1, 'd_name'))
         self.assertRaises(IntegrityError, self.sess.commit)
 
+    # NUM
+
     def testRequireNum(self):
-        self.assertRaises(TypeError, Descriptor, 1, None, 'd_name')
-        d = Descriptor(1, 1, 'd_name')
-        self.sess.add(d)
-        d.num = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(TypeError, 'num')
 
-    def testRequireNonZeroNum(self):
-        self.assertRaises(AssertionError, Descriptor, 1, 0, 'd_name')
-        d = Descriptor(1, 1, 'd_name')
-        self.sess.add(d)
-        d.num = 0
-        self.assertRaises(IntegrityError, self.sess.commit)
+    def testRequirePositiveNum(self):
+        self.assertPositiveValue(AssertionError, 'num')
 
-    def testRequireNonNegativeNum(self):
-        self.assertRaises(AssertionError, Descriptor, 1, -1, 'd_name')
-        d = Descriptor(1, 1, 'd_name')
-        self.sess.add(d)
-        d.num = -1
-        self.assertRaises(IntegrityError, self.sess.commit)
+    # NAME
 
     def testRequireName(self):
-        self.assertRaises(AssertionError, Descriptor, 1, 1, '')
-        d = Descriptor(1, 1, 'd_name')
-        self.sess.add(d)
-        d.name = ''
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(AssertionError, 'name')
 
-    def testRequireMajor(self):
+    def testRequireNonEmptyName(self):
+        self.assertNonEmptyValue(AssertionError, 'name')
+
+    # MAJOR
+
+    def testMajorIsBool(self):
         self.sess.add(Descriptor(1, 1, 'd_name', None))
         self.assertRaises(IntegrityError, self.sess.commit)
+
+    # METHODS
 
     def testToString(self):
         self.assertEqual('1\t1\tT\tmajor\n', str(Descriptor(1, 1, 'major', True)))
@@ -448,11 +415,6 @@ class DescriptorTest(TestCase):
         self.sess.add(d)
         self.sess.commit()
         self.assertListEqual([d], self.M.descriptors)
-
-    def testDescriptorRelations(self):
-        d = Descriptor(1, 1, 'name')
-        self.sess.add(d)
-        self.sess.commit()
         self.assertEqual(self.M, d.medline)
 
     def testSelect(self):
@@ -460,6 +422,7 @@ class DescriptorTest(TestCase):
         self.sess.add(Descriptor(1, 2, 'd2'))
         self.sess.add(Descriptor(1, 3, 'd3'))
         self.sess.commit()
+
         for row in Descriptor.select(1, ['num', 'name']):
             if row['num'] == 1:
                 self.assertEqual(row['name'], 'd1')
@@ -475,6 +438,7 @@ class DescriptorTest(TestCase):
         self.sess.add(Descriptor(1, 2, 'd2'))
         self.sess.add(Descriptor(1, 3, 'd3'))
         self.sess.commit()
+
         for row in Descriptor.selectAll(1):
             if row['num'] == 1:
                 self.assertEqual(row['name'], 'd1')
@@ -487,7 +451,7 @@ class DescriptorTest(TestCase):
                 self.fail(str(row))
 
 
-class QualifierTest(TestCase):
+class QualifierTest(TestCase, TestMixin):
     def setUp(self):
         InitDb(URI, module=dbapi2)
         self.sess = Session()
@@ -495,71 +459,58 @@ class QualifierTest(TestCase):
         self.sess.add(self.M)
         self.D = Descriptor(1, 1, 'd_name', True)
         self.sess.add(self.D)
+        self.klass = Qualifier
+        self.entity = namedtuple('Qualifier', 'pmid num sub name')
+        self.defaults = self.entity(1, 1, 1, 'name')
 
     def testCreate(self):
-        q = Qualifier(1, 1, 1, 'q_name')
-        self.sess.add(q)
-        self.sess.commit()
-        self.assertEqual(q, self.sess.query(Qualifier).first())
+        self.assertCreate()
 
     def testEquals(self):
-        self.assertEqual(Qualifier(1, 1, 1, 'q_name'),
-                         Qualifier(1, 1, 1, 'q_name'))
+        self.assertSame()
+        self.assertDifference(num=2)
+        self.assertDifference(sub=2)
+        self.assertDifference(name='other')
         self.assertNotEqual(Qualifier(1, 1, 1, 'q_name', True),
-                            Qualifier(1, 1, 1, 'q_name'))
-        self.assertNotEqual(Qualifier(1, 1, 1, 'other'),
-                            Qualifier(1, 1, 1, 'q_name'))
+                            Qualifier(1, 1, 1, 'q_name', False))
+
+    # PMID
 
     def testRequirePmid(self):
-        self.assertRaises(TypeError, Qualifier, None, 1, 1, 'q_name')
-        q = Qualifier(1, 1, 1, 'q_name')
-        self.sess.add(q)
-        q.pmid = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(TypeError, 'pmid')
+
+    # NUM
 
     def testRequireNum(self):
-        self.assertRaises(TypeError, Qualifier, 1, None, 1, 'q_name')
-        q = Qualifier(1, 1, 1, 'q_name')
-        self.sess.add(q)
-        q.num = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(TypeError, 'num')
 
     def testRequireExistingDescriptor(self):
         self.sess.add(Qualifier(1, 2, 1, 'q_name'))
         self.assertRaises(IntegrityError, self.sess.commit)
 
+    # SUB
+
     def testRequireSub(self):
-        self.assertRaises(TypeError, Qualifier, 1, 1, None, 'q_name')
-        q = Qualifier(1, 1, 1, 'q_name')
-        self.sess.add(q)
-        q.sub = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(TypeError, 'sub')
 
-    def testRequireNonZeroSub(self):
-        self.assertRaises(AssertionError, Qualifier, 1, 1, 0, 'q_name')
-        q = Qualifier(1, 1, 1, 'q_name')
-        self.sess.add(q)
-        q.sub = 0
-        self.assertRaises(IntegrityError, self.sess.commit)
+    def testRequirePositiveSub(self):
+        self.assertPositiveValue(AssertionError, 'sub')
 
-    def testRequireNonNegativeSub(self):
-        self.assertRaises(AssertionError, Qualifier, 1, 1, -1, 'q_name')
-        q = Qualifier(1, 1, 1, 'q_name')
-        self.sess.add(q)
-        q.sub = -1
-        self.assertRaises(IntegrityError, self.sess.commit)
+    # NAME
 
     def testRequireName(self):
-        self.assertRaises(AssertionError, Qualifier, 1, 1, 1, '')
-        q = Qualifier(1, 1, 1, 'q_name')
-        self.sess.add(q)
-        q.name = ''
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(AssertionError, 'name')
 
-    def testRequireMajor(self):
-        # noinspection PyTypeChecker
+    def testRequireNonEmptyName(self):
+        self.assertNonEmptyValue(AssertionError, 'name')
+
+    # MAJOR
+
+    def testMajorIsBool(self):
         self.sess.add(Qualifier(1, 1, 1, 'q_name', None))
         self.assertRaises(IntegrityError, self.sess.commit)
+
+    # METHODS
 
     def testToString(self):
         self.assertEqual('1\t1\t1\tT\tmajor\n', str(Qualifier(1, 1, 1, 'major', True)))
@@ -573,11 +524,6 @@ class QualifierTest(TestCase):
         self.sess.add(q)
         self.sess.commit()
         self.assertListEqual([q], self.M.qualifiers)
-
-    def testQualifierRelations(self):
-        q = Qualifier(1, 1, 1, 'name')
-        self.sess.add(q)
-        self.sess.commit()
         self.assertEqual(self.M, q.medline)
         self.assertEqual(self.D, q.descriptor)
 
@@ -586,6 +532,7 @@ class QualifierTest(TestCase):
         self.sess.add(Qualifier(1, 1, 2, 'q2'))
         self.sess.add(Qualifier(1, 1, 3, 'q3'))
         self.sess.commit()
+
         for row in Qualifier.select((1, 1), ['sub', 'name']):
             if row['sub'] == 1:
                 self.assertEqual(row['name'], 'q1')
@@ -601,6 +548,7 @@ class QualifierTest(TestCase):
         self.sess.add(Qualifier(1, 1, 2, 'q2'))
         self.sess.add(Qualifier(1, 1, 3, 'q3'))
         self.sess.commit()
+
         for row in Qualifier.selectAll((1, 1)):
             if row['sub'] == 1:
                 self.assertEqual(row['name'], 'q1')
@@ -612,78 +560,64 @@ class QualifierTest(TestCase):
                 self.fail(str(row))
 
 
-class AuthorTest(TestCase):
+class AuthorTest(TestCase, TestMixin):
     def setUp(self):
         InitDb(URI, module=dbapi2)
         self.sess = Session()
         self.M = Medline(1, 'MEDLINE', 'Journal', date.today())
         self.sess.add(self.M)
+        self.klass = Author
+        self.entity = namedtuple('Author', 'pmid pos name')
+        self.defaults = self.entity(1, 1, 'last')
 
     def testCreate(self):
-        a = Author(1, 1, 'last')
-        self.sess.add(a)
-        self.sess.commit()
-        self.assertEqual(a, self.sess.query(Author).first())
+        self.assertCreate()
 
     def testEquals(self):
-        self.assertEqual(Author(1, 1, 'last'),
-                         Author(1, 1, 'last'))
-        self.assertNotEqual(Author(1, 1, 'other'),
-                            Author(1, 1, 'last'))
+        self.assertSame()
+        self.assertDifference(pos=2)
+        self.assertDifference(name='other')
+
+    # PMID
 
     def testRequirePmid(self):
-        self.assertRaises(TypeError, Author, None, 1, 'last')
-        a = Author(1, 1, 'last')
-        self.sess.add(a)
-        a.pmid = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(TypeError, 'pmid')
+
+    # POS
 
     def testRequirePos(self):
-        self.assertRaises(TypeError, Author, 1, None, 'last')
-        a = Author(1, 1, 'last')
-        self.sess.add(a)
-        a.pos = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(TypeError, 'pos')
 
-    def testRequireNonZeroPos(self):
-        self.assertRaises(AssertionError, Author, 1, 0, 'last')
-        a = Author(1, 1, 'last')
-        self.sess.add(a)
-        a.pos = 0
-        self.assertRaises(IntegrityError, self.sess.commit)
+    def testRequirePositivePos(self):
+        self.assertPositiveValue(AssertionError, 'pos')
 
-    def testRequireNonNegativePos(self):
-        self.assertRaises(AssertionError, Author, 1, -1, 'last')
-        a = Author(1, 1, 'last')
-        self.sess.add(a)
-        a.pos = -1
-        self.assertRaises(IntegrityError, self.sess.commit)
+    # NAME
 
     def testRequireName(self):
-        self.assertRaises(AssertionError, Author, 1, 1, None)
-        a = Author(1, 1, 'last')
-        self.sess.add(a)
-        a.name = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(AssertionError, 'name')
 
     def testRequireNonEmptyName(self):
-        self.assertRaises(AssertionError, Author, 1, 1, '')
-        a = Author(1, 1, 'last')
-        self.sess.add(a)
-        a.name = ''
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonEmptyValue(AssertionError, 'name')
+
+    # INITIALS
 
     def testAssignInitials(self):
         self.sess.add(Author(1, 1, 'last', initials='test'))
         self.assertEqual('test', self.sess.query(Author).first().initials)
 
+    # FORENAME
+
     def testAssignFirstName(self):
         self.sess.add(Author(1, 1, 'last', forename='test'))
         self.assertEqual('test', self.sess.query(Author).first().forename)
 
+    # SUFFIX
+
     def testAssignSuffix(self):
         self.sess.add(Author(1, 1, 'last', suffix='test'))
         self.assertEqual('test', self.sess.query(Author).first().suffix)
+
+    # METHODS
 
     def testFullNameDefault(self):
         a = Author(1, 1, 'last', initials='init', forename='first', suffix='suffix')
@@ -725,60 +659,49 @@ class AuthorTest(TestCase):
         self.sess.add(a)
         self.sess.commit()
         self.assertListEqual([a], self.M.authors)
-
-    def testAuthorRelations(self):
-        a = Author(1, 1, 'last')
-        self.sess.add(a)
-        self.sess.commit()
         self.assertEqual(self.M, a.medline)
 
 
-class IdentifierTest(TestCase):
+class IdentifierTest(TestCase, TestMixin):
     def setUp(self):
         InitDb(URI, module=dbapi2)
         self.sess = Session()
         self.M = Medline(1, 'MEDLINE', 'Journal', date.today())
         self.sess.add(self.M)
+        self.klass = Identifier
+        self.entity = namedtuple('Identifier', 'pmid namespace value')
+        self.defaults = self.entity(1, 'ns', 'id')
 
     def testCreate(self):
-        i = Identifier(1, 'ns', 'id')
-        self.sess.add(i)
-        self.sess.commit()
-        self.assertEqual(i, self.sess.query(Identifier).first())
+        self.assertCreate()
 
     def testEquals(self):
-        self.assertEqual(Identifier(1, 'ns', 'id'),
-                         Identifier(1, 'ns', 'id'))
-        self.assertNotEqual(Identifier(1, 'ns', 'other'),
-                            Identifier(1, 'ns', 'id'))
+        self.assertSame()
+        self.assertDifference(namespace='other')
+        self.assertDifference(value='other')
+
+    # PMID
+
+    def testRequirePmid(self):
+        self.assertNonNullValue(TypeError, 'pmid')
+
+    # NAMESPACE
 
     def testRequireNamespace(self):
-        self.assertRaises(AssertionError, Identifier, 1, None, 'id')
-        m = Identifier(1, 'ns', 'id')
-        self.sess.add(m)
-        m.namespace = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(AssertionError, 'namespace')
 
     def testRequireNonEmptyNamespace(self):
-        self.assertRaises(AssertionError, Identifier, 1, '', 'id')
-        m = Identifier(1, 'ns', 'id')
-        self.sess.add(m)
-        m.namespace = ''
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonEmptyValue(AssertionError, 'namespace')
 
-    def testRequireAccession(self):
-        self.assertRaises(AssertionError, Identifier, 1, 'ns', None)
-        m = Identifier(1, 'ns', 'id')
-        self.sess.add(m)
-        m.value = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+    # VALUE
 
-    def testRequireNonEmptyAccession(self):
-        self.assertRaises(AssertionError, Identifier, 1, 'ns', '')
-        m = Identifier(1, 'ns', 'id')
-        self.sess.add(m)
-        m.value = ''
-        self.assertRaises(IntegrityError, self.sess.commit)
+    def testRequireIdentifierValue(self):
+        self.assertNonNullValue(AssertionError, 'value')
+
+    def testRequireNonEmptyIdentifierValue(self):
+        self.assertNonEmptyValue(AssertionError, 'value')
+
+    # METHODS
 
     def testToString(self):
         self.assertEqual('1\tns\tid\n', str(Identifier(1, 'ns', 'id')))
@@ -791,11 +714,6 @@ class IdentifierTest(TestCase):
         self.sess.add(i)
         self.sess.commit()
         self.assertEqual({'ns': i}, self.M.identifiers)
-
-    def testIdentifierRelations(self):
-        i = Identifier(1, 'ns', 'id')
-        self.sess.add(i)
-        self.sess.commit()
         self.assertEqual(self.M, i.medline)
 
     def testPmid2Doi(self):
@@ -830,52 +748,92 @@ class IdentifierTest(TestCase):
         self.assertDictEqual({}, Identifier.mapDois2Pmids(['id3', 'id4']))
 
 
-class DatabaseTest(TestCase):
+class PublicationTypeTest(TestCase, TestMixin):
     def setUp(self):
         InitDb(URI, module=dbapi2)
         self.sess = Session()
         self.M = Medline(1, 'MEDLINE', 'Journal', date.today())
         self.sess.add(self.M)
+        self.klass = PublicationType
+        self.entity = namedtuple('PublicationType', 'pmid value')
+        self.defaults = self.entity(1, 'type')
 
     def testCreate(self):
-        i = Database(1, 'name', 'accession')
-        self.sess.add(i)
-        self.sess.commit()
-        self.assertEqual(i, self.sess.query(Database).first())
+        self.assertCreate()
 
     def testEquals(self):
-        self.assertEqual(Database(1, 'name', 'accession'),
-                         Database(1, 'name', 'accession'))
-        self.assertNotEqual(Database(1, 'name', 'other'),
-                         Database(1, 'name', 'accession'))
+        self.assertSame()
+        self.assertDifference(value='other')
+
+    # PMID
+
+    def testRequirePmid(self):
+        self.assertNonNullValue(TypeError, 'pmid')
+
+    # VALUE
+
+    def testRequireValue(self):
+        self.assertNonNullValue(AssertionError, 'value')
+
+    def testRequireNonEmptyValue(self):
+        self.assertNonEmptyValue(AssertionError, 'value')
+
+    # METHODS
+
+    def testToString(self):
+        self.assertEqual('1\ttype\n', str(PublicationType(1, 'type')))
+
+    def testToRepr(self):
+        self.assertEqual('PublicationType<1:type>', repr(PublicationType(1, 'type')))
+
+    def testMedlineRelations(self):
+        i = PublicationType(1, 'type')
+        self.sess.add(i)
+        self.sess.commit()
+        self.assertEqual([i], self.M.publication_types)
+        self.assertEqual(self.M, i.medline)
+
+
+class DatabaseTest(TestCase, TestMixin):
+    def setUp(self):
+        InitDb(URI, module=dbapi2)
+        self.sess = Session()
+        self.M = Medline(1, 'MEDLINE', 'Journal', date.today())
+        self.sess.add(self.M)
+        self.klass = Database
+        self.entity = namedtuple('Database', 'pmid name accession')
+        self.defaults = self.entity(1, 'name', 'accession')
+
+    def testCreate(self):
+        self.assertCreate()
+
+    def testEquals(self):
+        self.assertSame()
+        self.assertDifference(name='other')
+        self.assertDifference(accession='other')
+
+    # PMID
+
+    def testRequirePmid(self):
+        self.assertNonNullValue(TypeError, 'pmid')
+
+    # NAME
 
     def testRequireName(self):
-        self.assertRaises(AssertionError, Database, 1, None, 'accession')
-        m = Database(1, 'name', 'accession')
-        self.sess.add(m)
-        m.name = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(AssertionError, 'name')
 
     def testRequireNonEmptyName(self):
-        self.assertRaises(AssertionError, Database, 1, '', 'accession')
-        db = Database(1, 'name', 'accession')
-        self.sess.add(db)
-        db.name = ''
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonEmptyValue(AssertionError, 'name')
+
+    # ACCESSION
 
     def testRequireAccession(self):
-        self.assertRaises(AssertionError, Database, 1, 'name', None)
-        m = Database(1, 'name', 'accession')
-        self.sess.add(m)
-        m.accession = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(AssertionError, 'accession')
 
     def testRequireNonEmptyAccession(self):
-        self.assertRaises(AssertionError, Database, 1, 'name', '')
-        m = Database(1, 'name', 'accession')
-        self.sess.add(m)
-        m.accession = ''
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonEmptyValue(AssertionError, 'accession')
+
+    # METHODS
 
     def testToString(self):
         self.assertEqual('1\tname\taccession\n', str(Database(1, 'name', 'accession')))
@@ -888,77 +846,56 @@ class DatabaseTest(TestCase):
         self.sess.add(i)
         self.sess.commit()
         self.assertEqual([i], self.M.databases)
-
-    def testIdentifierRelations(self):
-        i = Database(1, 'name', 'accession')
-        self.sess.add(i)
-        self.sess.commit()
         self.assertEqual(self.M, i.medline)
 
 
-class ChemicalTest(TestCase):
+class ChemicalTest(TestCase, TestMixin):
     def setUp(self):
         InitDb(URI, module=dbapi2)
         self.sess = Session()
         self.M = Medline(1, 'MEDLINE', 'Journal', date.today())
         self.sess.add(self.M)
+        self.klass = Chemical
+        self.entity = namedtuple('Chemical', 'pmid idx name')
+        self.defaults = self.entity(1, 1, 'chem')
 
     def testCreate(self):
-        i = Chemical(1, 1, 'name')
-        self.sess.add(i)
-        self.sess.commit()
-        self.assertEqual(i, self.sess.query(Chemical).first())
+        self.assertCreate()
 
     def testEquals(self):
-        self.assertEqual(Chemical(1, 1, 'name', 'uid'),
-                         Chemical(1, 1, 'name', 'uid'))
+        self.assertSame()
+        self.assertDifference(name='other')
+        self.assertDifference(idx=2)
         self.assertNotEqual(Chemical(1, 1, 'name', 'other'),
-                         Chemical(1, 1, 'name', 'uid'))
-        self.assertNotEqual(Chemical(1, 1, 'other'),
-                         Chemical(1, 1, 'name'))
+                            Chemical(1, 1, 'name', 'uid'))
+
+    # PMID
+
+    def testRequirePmid(self):
+        self.assertNonNullValue(TypeError, 'pmid')
+
+    # IDX
 
     def testRequireIdx(self):
-        self.assertRaises(TypeError, Chemical, 1, None, 'name')
-        c = Chemical(1, 1, 'name')
-        self.sess.add(c)
-        c.idx = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(TypeError, 'idx')
 
-    def testRequireNonZeroIdx(self):
-        self.assertRaises(AssertionError, Chemical, 1, 0, 'name')
-        c = Chemical(1, 1, 'name')
-        self.sess.add(c)
-        c.idx = 0
-        self.assertRaises(IntegrityError, self.sess.commit)
+    def testRequirePositiveIdx(self):
+        self.assertPositiveValue(AssertionError, 'idx')
 
-    def testRequireNonNegativeIdx(self):
-        self.assertRaises(AssertionError, Chemical, 1, -1, 'name')
-        c = Chemical(1, 1, 'name')
-        self.sess.add(c)
-        c.idx = -1
-        self.assertRaises(IntegrityError, self.sess.commit)
-
-    def testUidNotRequired(self):
-        self.assertEqual(Chemical(1, 1, 'name', ''),
-                         Chemical(1, 1, 'name', ''))
-        self.assertEqual(Chemical(1, 1, 'name', None),
-                         Chemical(1, 1, 'name', None))
-        self.assertEqual(Chemical(1, 1, 'name'),
-                         Chemical(1, 1, 'name'))
-
-    def testRequireNonEmptyName(self):
-        self.assertRaises(AssertionError, Chemical, 1, 1, '')
-        db = Chemical(1, 1, 'name')
-        self.sess.add(db)
-        db.name = ''
-        self.assertRaises(IntegrityError, self.sess.commit)
+    # NAME
 
     def testRequireName(self):
-        self.assertRaises(AssertionError, Chemical, 1, 1, None)
-        m = Chemical(1, 1, 'name')
-        self.sess.add(m)
-        m.name = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(AssertionError, 'name')
+
+    def testRequireNonEmptyName(self):
+        self.assertNonEmptyValue(AssertionError, 'name')
+
+    # UID
+
+    def testRequireNonEmptyUid(self):
+        self.assertBadExtraValue(AssertionError, 'uid', '')
+
+    # METHODS
 
     def testToString(self):
         self.assertEqual('1\t1\tuid\tname\n', str(Chemical(1, 1, 'name', 'uid')))
@@ -966,85 +903,71 @@ class ChemicalTest(TestCase):
     def testToRepr(self):
         self.assertEqual('Chemical<1:1>', repr(Chemical(1, 1, 'name')))
 
-    def testMedlineRelation(self):
+    def testMedlineRelations(self):
         i = Chemical(1, 1, 'name')
         self.sess.add(i)
         self.sess.commit()
         self.assertEqual([i], self.M.chemicals)
-
-    def testChemicalsRelation(self):
-        i = Chemical(1, 1, 'name')
-        self.sess.add(i)
-        self.sess.commit()
         self.assertEqual(self.M, i.medline)
 
 
-class KeywordTest(TestCase):
+class KeywordTest(TestCase, TestMixin):
     def setUp(self):
         InitDb(URI, module=dbapi2)
         self.sess = Session()
         self.M = Medline(1, 'MEDLINE', 'Journal', date.today())
         self.sess.add(self.M)
+        self.klass = Keyword
+        self.entity = namedtuple('Keyword', 'pmid owner cnt name')
+        self.defaults = self.entity(1, 'NASA', 1, 'keyword')
 
     def testCreate(self):
-        i = Keyword(1, 'NASA', 1, 'name')
-        self.sess.add(i)
-        self.sess.commit()
-        self.assertEqual(i, self.sess.query(Keyword).first())
+        self.assertCreate()
 
     def testEquals(self):
-        self.assertEqual(Keyword(1, 'NASA', 1, 'name'),
-                         Keyword(1, 'NASA', 1, 'name'))
-        self.assertNotEqual(Keyword(1, 'NASA', 1, 'other'),
-                            Keyword(1, 'NASA', 1, 'name'))
+        self.assertSame()
+        self.assertDifference(cnt=2)
+        self.assertDifference(owner='NLM')
+        self.assertDifference(name='other')
         self.assertNotEqual(Keyword(1, 'NASA', 1, 'name', True),
-                            Keyword(1, 'NASA', 1, 'name'))
+                            Keyword(1, 'NASA', 1, 'name', False))
+
+    # PMID
+
+    def testRequirePmid(self):
+        self.assertNonNullValue(TypeError, 'pmid')
+
+    # OWNER
+
+    def testRequireOwner(self):
+        self.assertNonNullValue(AssertionError, 'owner')
 
     def testRequireValidOwner(self):
-        self.assertRaises(AssertionError, Keyword, 1, 'WRONG', None, 'name')
-        k = Keyword(1, 'NASA', 1, 'name')
-        self.sess.add(k)
-        k.owner = 'WRONG'
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertBadValue('WRONG', AssertionError, 'owner')
+
+    # CNT
 
     def testRequireCnt(self):
-        self.assertRaises(TypeError, Keyword, 1, 'NASA', None, 'name')
-        k = Keyword(1, 'NASA', 1, 'name')
-        self.sess.add(k)
-        k.cnt = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+        self.assertNonNullValue(TypeError, 'cnt')
 
-    def testRequireNonZeroCnt(self):
-        self.assertRaises(AssertionError, Keyword, 1, 'NASA', 0, 'name')
-        k = Keyword(1, 'NASA', 1, 'name')
-        self.sess.add(k)
-        k.cnt = 0
-        self.assertRaises(IntegrityError, self.sess.commit)
+    def testRequirePositiveCnt(self):
+        self.assertPositiveValue(AssertionError, 'cnt')
 
-    def testRequireNonNegativeCnt(self):
-        self.assertRaises(AssertionError, Keyword, 1, 'NASA', -1, 'name')
-        k = Keyword(1, 'NASA', 1, 'name')
-        self.sess.add(k)
-        k.cnt = -1
-        self.assertRaises(IntegrityError, self.sess.commit)
+    # NAME
 
-    def testRequireMajor(self):
+    def testRequireName(self):
+        self.assertNonNullValue(AssertionError, 'name')
+
+    def testRequireNonEmptyName(self):
+        self.assertNonEmptyValue(AssertionError, 'name')
+
+    # MAJOR
+
+    def testMajorIsBool(self):
         self.sess.add(Keyword(1, 'NLM', 1, 'name', None))
         self.assertRaises(IntegrityError, self.sess.commit)
 
-    def testRequireNonEmptyValue(self):
-        self.assertRaises(AssertionError, Keyword, 1, 'NASA', 1, '')
-        k = Keyword(1, 'NASA', 1, 'name')
-        self.sess.add(k)
-        k.value = ''
-        self.assertRaises(IntegrityError, self.sess.commit)
-
-    def testRequireValue(self):
-        self.assertRaises(AssertionError, Keyword, 1, 'NASA', 1, None)
-        k = Keyword(1, 'NASA', 1, 'name')
-        self.sess.add(k)
-        k.value = None
-        self.assertRaises(IntegrityError, self.sess.commit)
+    # METHODS
 
     def testToString(self):
         self.assertEqual('1\tNASA\t1\tF\tname\n', str(Keyword(1, 'NASA', 1, 'name')))
@@ -1053,16 +976,11 @@ class KeywordTest(TestCase):
     def testToRepr(self):
         self.assertEqual('Keyword<1:NASA:1>', repr(Keyword(1, 'NASA', 1, 'name')))
 
-    def testMedlineRelation(self):
+    def testMedlineRelations(self):
         i = Keyword(1, 'NASA', 1, 'name')
         self.sess.add(i)
         self.sess.commit()
         self.assertEqual([i], self.M.keywords)
-
-    def testKeywordsRelation(self):
-        i = Keyword(1, 'NASA', 1, 'name')
-        self.sess.add(i)
-        self.sess.commit()
         self.assertEqual(self.M, i.medline)
 
 

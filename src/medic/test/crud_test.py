@@ -5,8 +5,8 @@ from datetime import date
 from io import StringIO
 from tempfile import TemporaryFile
 
-from medic.orm import \
-        Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, Chemical, Keyword
+from medic.orm import Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, \
+        Chemical, Keyword, PublicationType
 from medic.crud import _dump
 
 DATA = [
@@ -19,6 +19,8 @@ DATA = [
     Author(1, 2, 'last'),
     Identifier(1, 'ns', 'id'),
     Database(1, 'name', 'accession'),
+    PublicationType(1, 'some'),
+    PublicationType(1, 'another'),
     Chemical(1, 1, 'name', 'uid'),
     Keyword(1, 'NOTNLM', 1, 'name', True),
     Medline(1, 'MEDLINE', 'journal', date.today()),
@@ -45,6 +47,7 @@ class TestDump(unittest.TestCase):
             Author.__tablename__: StringIO(),
             Identifier.__tablename__: StringIO(),
             Database.__tablename__: StringIO(),
+            PublicationType.__tablename__: StringIO(),
             Chemical.__tablename__: StringIO(),
             Keyword.__tablename__: StringIO(),
             'delete': StringIO(),
