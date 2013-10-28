@@ -22,7 +22,7 @@ from sqlalchemy.types import \
 
 __all__ = [
     'Medline', 'Author', 'Chemical', 'Database', 'Descriptor',
-    'Identifier', 'Keyword', 'Qualifier', 'Section'
+    'Identifier', 'Keyword', 'Qualifier', 'Section', 'PublicationType'
 ]
 
 _Base = declarative_base()
@@ -31,6 +31,7 @@ _session = lambda *args, **kwds: None
 
 NULL = lambda s: '\\N' if s is None else s
 DATE = lambda s: '\\N' if s is None else s.isoformat()
+STRING = lambda s: s.replace('\\', '\\\\').replace('\t', '\\t').replace('\n', '\\n')
 
 logger = logging.getLogger(__name__)
 
@@ -189,7 +190,7 @@ class Identifier(_Base, SelectMixin):
 
     def __str__(self):
         return '{}\t{}\t{}\n'.format(
-            NULL(self.pmid), NULL(self.namespace), NULL(self.value)
+            NULL(self.pmid), NULL(self.namespace), STRING(self.value)
         )
 
     def __repr__(self):
@@ -297,7 +298,7 @@ class Author(_Base, SelectMixin):
         UnicodeText, CheckConstraint("name <> ''"), nullable=False
     )
     initials = Column(Unicode(length=128), nullable=True)
-    forename = Column(Unicode(length=128), nullable=True)
+    forename = Column(Unicode(length=256), nullable=True)
     suffix = Column(Unicode(length=128), nullable=True)
 
     def __init__(self, pmid: int, pos: int, name: str,
@@ -314,7 +315,7 @@ class Author(_Base, SelectMixin):
 
     def __str__(self):
         return "{}\t{}\t{}\t{}\t{}\t{}\n".format(
-            NULL(self.pmid), NULL(self.pos), NULL(self.name),
+            NULL(self.pmid), NULL(self.pos), STRING(self.name),
             NULL(self.initials), NULL(self.forename), NULL(self.suffix))
 
     def __repr__(self):
@@ -403,7 +404,7 @@ class Qualifier(_Base, SelectMixin):
     def __str__(self):
         return '{}\t{}\t{}\t{}\t{}\n'.format(
             NULL(self.pmid), NULL(self.num), NULL(self.sub),
-            'T' if self.major else 'F', NULL(self.name),
+            'T' if self.major else 'F', STRING(self.name),
         )
 
     def __repr__(self):
@@ -464,7 +465,7 @@ class Descriptor(_Base, SelectMixin):
 
     def __str__(self):
         return '{}\t{}\t{}\t{}\n'.format(
-            NULL(self.pmid), NULL(self.num), 'T' if self.major else 'F', NULL(self.name)
+            NULL(self.pmid), NULL(self.num), 'T' if self.major else 'F', STRING(self.name)
         )
 
     def __repr__(self):
@@ -500,13 +501,14 @@ class Chemical(_Base, SelectMixin):
 
     pmid = Column(BigInteger, ForeignKey('records', ondelete="CASCADE"), primary_key=True)
     idx = Column(SmallInteger, CheckConstraint("idx > 0"), primary_key=True)
-    uid = Column(Unicode(length=256), nullable=True)
+    uid = Column(Unicode(length=256), CheckConstraint("uid <> ''"), nullable=True)
     name = Column(Unicode(length=256), CheckConstraint("name <> ''"), nullable=False)
 
     def __init__(self, pmid: int, idx: int, name: str, uid: str=None):
         assert pmid > 0, pmid
         assert idx > 0, idx
         assert name, repr(name)
+        assert uid is None or uid, repr(uid)
         self.pmid = pmid
         self.idx = idx
         self.uid = uid
@@ -514,7 +516,7 @@ class Chemical(_Base, SelectMixin):
 
     def __str__(self):
         return '{}\t{}\t{}\t{}\n'.format(
-            NULL(self.pmid), NULL(self.idx), NULL(self.uid), self.name
+            NULL(self.pmid), NULL(self.idx), NULL(self.uid), STRING(self.name)
         )
 
     def __repr__(self):
@@ -526,6 +528,43 @@ class Chemical(_Base, SelectMixin):
                self.idx == other.idx and \
                self.uid == other.uid and \
                self.name == other.name
+
+
+class PublicationType(_Base, SelectMixin):
+    """
+    Records the type of publication this citation refers to.
+
+    Attributes:
+
+        pmid
+            the record's identifier (PubMed ID)
+        value
+            the publication type value
+
+    Primary Key: ``(pmid, value)``
+    """
+
+    __tablename__ = 'publication_types'
+
+    pmid = Column(BigInteger, ForeignKey('records', ondelete="CASCADE"), primary_key=True)
+    value = Column(Unicode(length=256), CheckConstraint("value <> ''"), primary_key=True)
+
+    def __init__(self, pmid: int, value: str):
+        assert pmid > 0, pmid
+        assert value, repr(value)
+        self.pmid = pmid
+        self.value = value
+
+    def __str__(self):
+        return '{}\t{}\n'.format(NULL(self.pmid), NULL(self.value))
+
+    def __repr__(self):
+        return "PublicationType<{}:{}>".format(self.pmid, self.value)
+
+    def __eq__(self, other):
+        return isinstance(other, PublicationType) and \
+               self.pmid == other.pmid and \
+               self.value == other.value
 
 
 class Database(_Base, SelectMixin):
@@ -560,7 +599,7 @@ class Database(_Base, SelectMixin):
 
     def __str__(self):
         return '{}\t{}\t{}\n'.format(
-            NULL(self.pmid), NULL(self.name), NULL(self.accession)
+            NULL(self.pmid), NULL(self.name), STRING(self.accession)
         )
 
     def __repr__(self):
@@ -588,7 +627,7 @@ class Keyword(_Base, SelectMixin):
             (starting from 1)
         major
             if the keyword is a major topic of this article
-        value
+        name
             the keyword itself
 
     Primary Key: ``(pmid, owner, cnt)``
@@ -602,24 +641,23 @@ class Keyword(_Base, SelectMixin):
     owner = Column(Enum(*OWNERS, name='owner'), primary_key=True)
     cnt = Column(SmallInteger, CheckConstraint("cnt > 0"), primary_key=True)
     major = Column(Boolean, nullable=False)
-    value = Column(UnicodeText, CheckConstraint("value <> ''"), nullable=False)
+    name = Column(UnicodeText, CheckConstraint("name <> ''"), nullable=False)
 
-    def __init__(self, pmid: int, owner: str, cnt: int, value: str, major: bool=False):
+    def __init__(self, pmid: int, owner: str, cnt: int, name: str, major: bool=False):
         assert pmid > 0, pmid
         assert owner in Keyword.OWNERS, repr(owner)
         assert cnt > 0, cnt
-        assert value, repr(value)
+        assert name, repr(name)
         self.pmid = pmid
         self.owner = owner
         self.cnt = cnt
         self.major = major
-        self.value = value
+        self.name = name
 
     def __str__(self):
         return '{}\t{}\t{}\t{}\t{}\n'.format(
             NULL(self.pmid), NULL(self.owner), NULL(self.cnt),
-            'T' if self.major else 'F',
-            self.value.replace('\\', '\\\\').replace('\t', '\\t').replace('\n', '\\n')
+            'T' if self.major else 'F', STRING(self.name)
         )
 
     def __repr__(self):
@@ -633,7 +671,7 @@ class Keyword(_Base, SelectMixin):
                self.owner == other.owner and \
                self.cnt == other.cnt and \
                self.major == other.major and \
-               self.value == other.value
+               self.name == other.name
 
 
 class Section(_Base, SelectMixin):
@@ -647,7 +685,7 @@ class Section(_Base, SelectMixin):
         seq
             the sequence of sections in the record (starting from 1)
         name
-            the name of the section (see `Section.SECTIONS`)
+            the name of the section (Title, Abstract, Vernacular, Copyright, ...)
         label
             section label as defined by the publisher (if any)
         content
@@ -655,24 +693,20 @@ class Section(_Base, SelectMixin):
 
     Primary Key: ``(pmid, seq)``
     """
-
-    SECTIONS = frozenset({'Title', 'Abstract', 'Vernacular', 'Copyright',
-                          'Background', 'Objective', 'Methods', 'Results', 'Conclusions',
-                          'Unassigned', 'Unlabelled'})
-
     __tablename__ = 'sections'
 
     pmid = Column(BigInteger, ForeignKey('records', ondelete="CASCADE"), primary_key=True)
     seq = Column(SmallInteger, CheckConstraint("seq > 0"), primary_key=True)
-    name = Column(Enum(*SECTIONS, name='section'), nullable=False)
-    label = Column(Unicode(length=256))
+    name = Column(Unicode(length=64), CheckConstraint("name <> ''"), nullable=False)
+    label = Column(Unicode(length=256), CheckConstraint("label <> ''"), nullable=True)
     content = Column(UnicodeText, CheckConstraint("content <> ''"), nullable=False)
 
     def __init__(self, pmid: int, seq: int, name: str, content: str, label: str=None):
         assert pmid > 0, pmid
         assert seq > 0, seq
-        assert name in Section.SECTIONS, repr(name)
+        assert name, repr(name)
         assert content, repr(content)
+        assert label is None or label, repr(label)
         self.pmid = pmid
         self.seq = seq
         self.name = name
@@ -682,9 +716,7 @@ class Section(_Base, SelectMixin):
     def __str__(self):
         return '{}\t{}\t{}\t{}\t{}\n'.format(
             NULL(self.pmid), NULL(self.seq), NULL(self.name),
-            NULL(self.label), NULL(
-                self.content.replace('\\', '\\\\').replace('\t', '\\t').replace('\n', '\\n')
-            )
+            NULL(self.label), STRING(self.content)
         )
 
     def __repr__(self):
@@ -774,6 +806,7 @@ class Medline(_Base):
         Keyword, backref='medline', cascade='all, delete-orphan',
         order_by=(Keyword.__table__.c.owner, Keyword.__table__.c.cnt)
     )
+    publication_types = relation(PublicationType, backref='medline', cascade='all, delete-orphan')
     qualifiers = relation(Qualifier, backref='medline')
     sections = relation(
         Section, backref='medline', cascade='all, delete-orphan',
@@ -786,8 +819,8 @@ class Medline(_Base):
     journal = Column(Unicode(length=256), CheckConstraint("journal <> ''"),
                      nullable=False)
     created = Column(Date, nullable=False)
-    completed = Column(Date)
-    revised = Column(Date)
+    completed = Column(Date, nullable=True)
+    revised = Column(Date, nullable=True)
     modified = Column(
         Date, default=date.today, onupdate=date.today, nullable=False
     )
@@ -948,4 +981,3 @@ class Medline(_Base):
             return set(row[0] for row in conn.execute(query))
         finally:
             conn.close()
-
