@@ -507,20 +507,20 @@ first entry (in the order they appear in the baseline files) without a
 do want to process other versions of a citation, use the option <tt class="docutils literal"><span class="pre">--all</span></tt>.</p>
 <p>In short, this tool by default <strong>removes</strong> alternate citations.</p>
 </div>
-<div class="section" id="database-er-model">
-<h1>Database ER Model</h1>
-<pre class="literal-block">
-[Author] → [Medline] ← [Descriptor] ← [Qualifier]
-            ↑     ↑
-  [Identifier]   [Section]  [Database]  [Chemical] [Keyword]
-</pre>
+<div class="section" id="database-tables">
+<h1>Database Tables</h1>
 <dl class="docutils">
 <dt>Medline (records)</dt>
 <dd><strong>pmid</strong>:BIGINT, <em>status</em>:ENUM(state), <em>journal</em>:VARCHAR(256),
 <em>created</em>:DATE, completed:DATE, revised:DATE, modified:DATE</dd>
+<dt>Section (sections)</dt>
+<dd><strong>pmid</strong>:FK(Medline), <strong>seq</strong>:SMALLINT, <em>name</em>:ENUM(section),
+label:VARCHAR(256), <em>content</em>:TEXT</dd>
 <dt>Author (authors)</dt>
 <dd><strong>pmid</strong>:FK(Medline), <strong>pos</strong>:SMALLINT, <em>name</em>:TEXT,
 initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),</dd>
+<dt>PublicationType (publication_types)</dt>
+<dd><strong>pmid</strong>:FK(Medline), <strong>value</strong>:VARCHAR(256)</dd>
 <dt>Descriptor (descriptors)</dt>
 <dd><strong>pmid</strong>:FK(Medline), <strong>num</strong>:SMALLINT, major:BOOL, <em>name</em>:TEXT</dd>
 <dt>Qualifier (qualifiers)</dt>
@@ -533,9 +533,6 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),</dd>
 <dd><strong>pmid</strong>:FK(Medline), <strong>idx</strong>:VARCHAR(32), uid:VARCHAR(256), <em>name</em>:VARCHAR(256)</dd>
 <dt>Keyword (keywords)</dt>
 <dd><strong>pmid</strong>:FK(Medline), <strong>owner</strong>:ENUM(owner), <strong>cnt</strong>:SMALLINT, major:BOOL, <em>value</em>:TEXT</dd>
-<dt>Section (sections)</dt>
-<dd><strong>pmid</strong>:FK(Medline), <strong>seq</strong>:SMALLINT, <em>name</em>:ENUM(section),
-label:VARCHAR(256), <em>content</em>:TEXT</dd>
 </dl>
 <ul class="simple">
 <li><strong>bold</strong> (Composite) Primary Key</li>
@@ -554,6 +551,7 @@ label:VARCHAR(256), <em>content</em>:TEXT</dd>
 <li>DataBank (<tt class="docutils literal">Database</tt>)</li>
 <li>Keyword (<tt class="docutils literal">Keyword</tt>)</li>
 <li>MeshHeading (<tt class="docutils literal">Descriptor</tt> and <tt class="docutils literal">Qualifier</tt>)</li>
+<li>PublicationType (<tt class="docutils literal">PublicationType</tt>)</li>
 <li>DeleteCitation (for deleting records when parsing updates)</li>
 </ul>
 </div>
@@ -581,6 +579,7 @@ label:VARCHAR(256), <em>content</em>:TEXT</dd>
 <li>NameOfSubstance (<tt class="docutils literal">Chemcial.name</tt>)</li>
 <li>OtherID (<tt class="docutils literal">Identifier.value</tt> iff <em>Source</em> is &quot;PMC&quot; with <tt class="docutils literal">Identifier.namespace</tt> as &quot;pmc&quot;)</li>
 <li>PMID (<tt class="docutils literal">Medline.pmid</tt>)</li>
+<li>PublicationType (<tt class="docutils literal">PublicationType.value</tt>)</li>
 <li>QualifierName (<tt class="docutils literal">Qualifier.name</tt> with <em>MajorTopicYN</em> as <tt class="docutils literal">Qualifier.major</tt>)</li>
 <li>RegistryNumber (<tt class="docutils literal">Chemical.uid</tt>)</li>
 <li>Suffix (<tt class="docutils literal">Author.suffix</tt>)</li>
@@ -591,10 +590,13 @@ label:VARCHAR(256), <em>content</em>:TEXT</dd>
 <div class="section" id="version-history">
 <h1>Version History</h1>
 <dl class="docutils">
-<dt>1.2.0</dt>
+<dt>2.0.0</dt>
 <dd><ul class="first last simple">
-<li>added support for the new entity Keywords</li>
+<li>added Keywords and PublicationTypes</li>
+<li>added MEDLINE output format and made it the default</li>
 <li>DB structure change: descriptors.major and qualifiers.major columns swapped</li>
+<li>DB structure change: section.name is now an untyped varchar (OtherAbstract separation)</li>
+<li>cleaned up the ORM test cases</li>
 </ul>
 </dd>
 <dt>1.1.1</dt>

@@ -287,28 +287,23 @@ first entry (in the order they appear in the baseline files) without a
 do want to process other versions of a citation, use the option \fB\-\-all\fP\&.
 .sp
 In short, this tool by default \fBremoves\fP alternate citations.
-.SH DATABASE ER MODEL
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-[Author] → [Medline] ← [Descriptor] ← [Qualifier]
-            ↑     ↑
-  [Identifier]   [Section]  [Database]  [Chemical] [Keyword]
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
+.SH DATABASE TABLES
 .INDENT 0.0
 .TP
 .B Medline (records)
 \fBpmid\fP:BIGINT, \fIstatus\fP:ENUM(state), \fIjournal\fP:VARCHAR(256),
 \fIcreated\fP:DATE, completed:DATE, revised:DATE, modified:DATE
 .TP
+.B Section (sections)
+\fBpmid\fP:FK(Medline), \fBseq\fP:SMALLINT, \fIname\fP:ENUM(section),
+label:VARCHAR(256), \fIcontent\fP:TEXT
+.TP
 .B Author (authors)
 \fBpmid\fP:FK(Medline), \fBpos\fP:SMALLINT, \fIname\fP:TEXT,
 initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),
+.TP
+.B PublicationType (publication_types)
+\fBpmid\fP:FK(Medline), \fBvalue\fP:VARCHAR(256)
 .TP
 .B Descriptor (descriptors)
 \fBpmid\fP:FK(Medline), \fBnum\fP:SMALLINT, major:BOOL, \fIname\fP:TEXT
@@ -327,10 +322,6 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),
 .TP
 .B Keyword (keywords)
 \fBpmid\fP:FK(Medline), \fBowner\fP:ENUM(owner), \fBcnt\fP:SMALLINT, major:BOOL, \fIvalue\fP:TEXT
-.TP
-.B Section (sections)
-\fBpmid\fP:FK(Medline), \fBseq\fP:SMALLINT, \fIname\fP:ENUM(section),
-label:VARCHAR(256), \fIcontent\fP:TEXT
 .UNINDENT
 .INDENT 0.0
 .IP \(bu 2
@@ -355,6 +346,8 @@ DataBank (\fBDatabase\fP)
 Keyword (\fBKeyword\fP)
 .IP \(bu 2
 MeshHeading (\fBDescriptor\fP and \fBQualifier\fP)
+.IP \(bu 2
+PublicationType (\fBPublicationType\fP)
 .IP \(bu 2
 DeleteCitation (for deleting records when parsing updates)
 .UNINDENT
@@ -403,6 +396,8 @@ OtherID (\fBIdentifier.value\fP iff \fISource\fP is "PMC" with \fBIdentifier.nam
 .IP \(bu 2
 PMID (\fBMedline.pmid\fP)
 .IP \(bu 2
+PublicationType (\fBPublicationType.value\fP)
+.IP \(bu 2
 QualifierName (\fBQualifier.name\fP with \fIMajorTopicYN\fP as \fBQualifier.major\fP)
 .IP \(bu 2
 RegistryNumber (\fBChemical.uid\fP)
@@ -414,12 +409,18 @@ VernacularTitle (\fBSection.name\fP "Vernacular", \fBSection.content\fP)
 .SH VERSION HISTORY
 .INDENT 0.0
 .TP
-.B 1.2.0
+.B 2.0.0
 .INDENT 7.0
 .IP \(bu 2
-added support for the new entity Keywords
+added Keywords and PublicationTypes
+.IP \(bu 2
+added MEDLINE output format and made it the default
 .IP \(bu 2
 DB structure change: descriptors.major and qualifiers.major columns swapped
+.IP \(bu 2
+DB structure change: section.name is now an untyped varchar (OtherAbstract separation)
+.IP \(bu 2
+cleaned up the ORM test cases
 .UNINDENT
 .TP
 .B 1.1.1

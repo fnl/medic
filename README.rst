@@ -179,22 +179,23 @@ do want to process other versions of a citation, use the option ``--all``.
 
 In short, this tool by default **removes** alternate citations.
 
-Database ER Model
-=================
-
-::
-
-    [Author] → [Medline] ← [Descriptor] ← [Qualifier]
-                ↑     ↑
-      [Identifier]   [Section]  [Database]  [Chemical] [Keyword]
+Database Tables
+===============
 
 Medline (records)
   **pmid**:BIGINT, *status*:ENUM(state), *journal*:VARCHAR(256),
   *created*:DATE, completed:DATE, revised:DATE, modified:DATE
 
+Section (sections)
+  **pmid**:FK(Medline), **seq**:SMALLINT, *name*:ENUM(section),
+  label:VARCHAR(256), *content*:TEXT
+
 Author (authors)
   **pmid**:FK(Medline), **pos**:SMALLINT, *name*:TEXT,
   initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),
+
+PublicationType (publication_types)
+  **pmid**:FK(Medline), **value**:VARCHAR(256)
 
 Descriptor (descriptors)
   **pmid**:FK(Medline), **num**:SMALLINT, major:BOOL, *name*:TEXT
@@ -214,10 +215,6 @@ Chemical (chemicals)
 Keyword (keywords)
   **pmid**:FK(Medline), **owner**:ENUM(owner), **cnt**:SMALLINT, major:BOOL, *value*:TEXT
 
-Section (sections)
-  **pmid**:FK(Medline), **seq**:SMALLINT, *name*:ENUM(section),
-  label:VARCHAR(256), *content*:TEXT
-
 - **bold** (Composite) Primary Key
 - *italic* NOT NULL (Strings that may not be NULL are also never empty.)
 
@@ -234,6 +231,7 @@ Entities
 - DataBank (``Database``)
 - Keyword (``Keyword``)
 - MeshHeading (``Descriptor`` and ``Qualifier``)
+- PublicationType (``PublicationType``)
 - DeleteCitation (for deleting records when parsing updates)
 
 Fields/Values
@@ -260,6 +258,7 @@ Fields/Values
 - NameOfSubstance (``Chemcial.name``)
 - OtherID (``Identifier.value`` iff *Source* is "PMC" with ``Identifier.namespace`` as "pmc")
 - PMID (``Medline.pmid``)
+- PublicationType (``PublicationType.value``)
 - QualifierName (``Qualifier.name`` with *MajorTopicYN* as ``Qualifier.major``)
 - RegistryNumber (``Chemical.uid``)
 - Suffix (``Author.suffix``)
@@ -268,9 +267,12 @@ Fields/Values
 Version History
 ===============
 
-1.2.0
-  - added support for the new entity Keywords
+2.0.0
+  - added Keywords and PublicationTypes
+  - added MEDLINE output format and made it the default
   - DB structure change: descriptors.major and qualifiers.major columns swapped
+  - DB structure change: section.name is now an untyped varchar (OtherAbstract separation)
+  - cleaned up the ORM test cases
 1.1.1
   - code cleanup (PEP8, PyFlake)
   - fixed an issue where the parser would not leave the skipping state
