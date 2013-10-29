@@ -109,7 +109,8 @@ class Parser:
 
                 if isinstance(instance, types.GeneratorType):
                     for i in instance:
-                        yield i
+                        if i is not None:
+                            yield i
                 else:
                     yield instance
             else:
@@ -215,38 +216,25 @@ class MedlineXMLParser(Parser):
 
     def Abstract(self, element):
         for e in element.getchildren():
-            if e.tag == 'CopyrightInformation':
-                yield self.parseCopyrightInformation(e)
-            else:
-                yield self.parseAbstractText(e)
+            if element.text is not None and element.text.strip():
+                if e.tag == 'CopyrightInformation':
+                    yield self.parseCopyrightInformation(e)
+                else:
+                    yield self.parseAbstractText(e)
 
     def parseAbstractText(self, element, other=None):
-        # sometimes there are non-content AbstractText
-        # elements in MEDLINE/PubMed ("<AbstractText/>")
-        if element.text is not None:
-            text = element.text.strip()
-            # and, less frequently, they might only contain whitespaces
-            if text:
-                self.seq += 1
-                section = element.get('NlmCategory', 'Abstract').capitalize()
-                return Section(
-                    self.pmid, self.seq,
-                    '{}{}'.format(other, section) if other else section,
-                    text, element.get('Label', None)
-                )
-
-        logger.debug('empty %s AbstractText in %i',
-                     element.get('NlmCategory', 'ABSTRACT'), self.pmid)
-        return None
+        text = element.text.strip()
+        self.seq += 1
+        name = element.get('NlmCategory', 'Abstract').capitalize()
+        name = '{}{}'.format(other, name) if other else name
+        return Section(
+            self.pmid, self.seq, name, text, element.get('Label', None)
+        )
 
     def parseCopyrightInformation(self, element, other=None):
-        if element.text is not None:
-            self.seq += 1
-            return Section(
-                self.pmid, self.seq,
-                '{}Copyright'.format(other) if other else 'Copyright',
-                element.text.strip()
-            )
+        name = '{}Copyright'.format(other) if other else 'Copyright'
+        self.seq += 1
+        return Section(self.pmid, self.seq, name, element.text.strip())
 
     def ArticleTitle(self, element):
         if element.text is not None:
@@ -335,8 +323,6 @@ class MedlineXMLParser(Parser):
             self.namespaces.add(ns)
             return Identifier(self.pmid, ns, element.text.strip())
 
-        return None
-
     def KeywordList(self, element):
         owner = element.get('Owner', 'NLM').strip().upper()
         logger.debug('KeywordList Owner="%s"', owner)
@@ -356,33 +342,36 @@ class MedlineXMLParser(Parser):
 
     def MeshHeadingList(self, element):
         for num, mesh in enumerate(element.getchildren()):
-            yield self.parseDescriptor(num, mesh.find('DescriptorName'))
+            descriptor = mesh.find('DescriptorName')
+
+            if descriptor is not None and descriptor.text:
+                yield self.parseDescriptor(num, descriptor)
 
             for sub, qualifier in enumerate(mesh.findall('QualifierName')):
-                yield self.parseQualifier(num, sub, qualifier)
+                if qualifier.text:
+                    yield self.parseQualifier(num, sub, qualifier)
 
     def parseDescriptor(self, num, element):
-        if element.text is not None:
-            return Descriptor(
-                self.pmid, num + 1, element.text.strip(),
-                element.get('MajorTopicYN', 'N') == 'Y',
-            )
+        return Descriptor(
+            self.pmid, num + 1, element.text.strip(),
+            element.get('MajorTopicYN', 'N') == 'Y',
+        )
 
     def parseQualifier(self, num, sub, element):
-        if element.text is not None:
-            return Qualifier(
-                self.pmid, num + 1, sub + 1, element.text.strip(),
-                element.get('MajorTopicYN', 'N') == 'Y',
-            )
+        return Qualifier(
+            self.pmid, num + 1, sub + 1, element.text.strip(),
+            element.get('MajorTopicYN', 'N') == 'Y',
+        )
 
     def OtherAbstract(self, element):
         other = element.get('Type')
 
         for e in element.getchildren():
-            if e.tag == 'CopyrightInformation':
-                yield self.parseCopyrightInformation(e, other)
-            else:
-                yield self.parseAbstractText(e, other)
+            if element.text is not None and element.text.strip():
+                if e.tag == 'CopyrightInformation':
+                    yield self.parseCopyrightInformation(e, other)
+                else:
+                    yield self.parseAbstractText(e, other)
 
     def OtherID(self, element):
         if element.get('Source', None) == 'NLM':
@@ -392,8 +381,6 @@ class MedlineXMLParser(Parser):
                 if 'pmc' not in self.namespaces:
                     self.namespaces.add('pmc')
                     return Identifier(self.pmid, 'pmc', text.split(' ', 1)[0])
-
-        return None
 
     def PublicationType(self, element):
         if element.text:
