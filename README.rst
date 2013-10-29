@@ -1,13 +1,13 @@
 =====
 medic
 =====
-------------------------------------------------------
-a command-line tool to maintain a DB mirror of MEDLINE
-------------------------------------------------------
+-------------------------------------------------
+a command-line tool to manage a mirror of MEDLINE
+-------------------------------------------------
 
-The Swiss Army knife to parse MEDLINE XML files or
-download eUtils' PubMed XML records,
-bootstrapping a MEDLINE/PubMed database,
+The Swiss Army knife to parse MEDLINE_ XML files or
+download eUtils' PubMed_ XML records,
+bootstrapping a local MEDLINE/PubMed database,
 updating and/or deleting the records, and
 writing the contents of selected PMIDs into flat-files.
 
@@ -70,10 +70,10 @@ The five **COMMAND** arguments:
   Create records in the DB by parsing MEDLINE XML files or
   by downloading PubMed XML from NCBI eUtils for a list of PMIDs.
 ``write``
-  Write records as plaintext files to a directory, each file named as
-  "<pmid>.txt", and containing most of the DB stored content or just the
-  TIAB (title and abstract). In addition, a single file in TSV or HTML
-  format can be generated (see option ``--format``).
+  Write records as MEDLINE_ files to a directory, each file named as
+  "<pmid>.txt". Alternatively, just the TIAB (title and abstract) plain-text
+  can be output, and finally, a single file in TSV or HTML format can be
+  generated (see option ``--format``).
 ``update``
   Insert or update records in the DB (instead of creating them); note that
   if a record exists, but is added with ``create``, this would throw an
@@ -184,6 +184,7 @@ Database Tables
 
 Medline (records)
   **pmid**:BIGINT, *status*:ENUM(state), *journal*:VARCHAR(256),
+  *pub_date*:VARCHAR(256), issue:VARCHAR(256), pagination:VARCHAR(256),
   *created*:DATE, completed:DATE, revised:DATE, modified:DATE
 
 Section (sections)
@@ -251,24 +252,29 @@ Fields/Values
 - ELocationID (``Identifier.value`` with *EIdType* as ``Identifier.namespace``)
 - ForeName (``Author.forename``)
 - Initials (``Author.initials``)
+- Issue (``Medline.issue``)
 - Keyword (``Keyword.value`` with *Owner* as ``Keyword.owner`` and *MajorTopicYN* as ``Keyword.major``)
 - LastName (``Author.name``)
 - MedlineCitation (only *Status* as ``Medline.status``)
 - MedlineTA (``Medline.journal``)
 - NameOfSubstance (``Chemcial.name``)
+- MedlinePgn (``Medline.pagination``)
 - OtherID (``Identifier.value`` iff *Source* is "PMC" with ``Identifier.namespace`` as "pmc")
 - PMID (``Medline.pmid``)
+- PubDate (``Medline.pub_date``)
 - PublicationType (``PublicationType.value``)
 - QualifierName (``Qualifier.name`` with *MajorTopicYN* as ``Qualifier.major``)
 - RegistryNumber (``Chemical.uid``)
 - Suffix (``Author.suffix``)
 - VernacularTitle (``Section.name`` "Vernacular", ``Section.content``)
+- Volume (``Medline.issue``)
 
 Version History
 ===============
 
 2.0.0
   - added Keywords and PublicationTypes
+  - added MEDLINE publication date, volume, issue, and pagination support
   - added MEDLINE output format and made it the default
   - DB structure change: descriptors.major and qualifiers.major columns swapped
   - DB structure change: section.name is now an untyped varchar (OtherAbstract separation)
@@ -294,3 +300,5 @@ License: `GNU GPL v3`_\ .
 Copryright 2012, 2013 Florian Leitner. All rights reserved.
 
 .. _GNU GPL v3: http://www.gnu.org/licenses/gpl-3.0.html
+.. _MEDLINE: http://www.nlm.nih.gov/bsd/mms/medlineelements.html
+.. _PubMed: http://www.ncbi.nlm.nih.gov/pubmed

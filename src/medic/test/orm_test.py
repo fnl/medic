@@ -71,8 +71,8 @@ class MedlineTest(TestCase, TestMixin):
         InitDb(URI, module=dbapi2)
         self.sess = Session()
         self.klass = Medline
-        self.entity = namedtuple('Medline', 'pmid status journal created')
-        self.defaults = self.entity(1, 'MEDLINE', 'journal', date.today())
+        self.entity = namedtuple('Medline', 'pmid status journal pub_date created')
+        self.defaults = self.entity(1, 'MEDLINE', 'journal', 'published', date.today())
 
     def testCreate(self):
         self.assertCreate()
@@ -82,10 +82,11 @@ class MedlineTest(TestCase, TestMixin):
         self.assertDifference(pmid=2)
         self.assertDifference(status='In-Data-Review')
         self.assertDifference(journal='other')
+        self.assertDifference(pub_date='other')
 
     def testBigPmids(self):
         big = 987654321098765432  # up to 18 decimals
-        r = Medline(big, 'MEDLINE', 'journal', date.today())
+        r = Medline(big, 'MEDLINE', 'journal', 'PubDate', date.today())
         self.sess.add(r)
         self.sess.commit()
         self.assertEqual(big, r.pmid)
@@ -111,7 +112,7 @@ class MedlineTest(TestCase, TestMixin):
         d = date.today()
 
         for pmid, status in enumerate(Medline.STATES):
-            self.sess.add(Medline(pmid + 1, status, 'journal', d))
+            self.sess.add(Medline(pmid + 1, status, 'journal', 'pubdate', d))
             self.sess.commit()
 
         self.assertTrue(True)
@@ -148,7 +149,7 @@ class MedlineTest(TestCase, TestMixin):
         self.assertRaises(StatementError, self.sess.commit)
 
     def testAutomaticModified(self):
-        r = Medline(1, 'MEDLINE', 'journal', date.today())
+        r = Medline(1, 'MEDLINE', 'journal', 'PubDate', date.today())
         self.sess.add(r)
         self.sess.commit()
         self.assertEqual(date.today(), r.modified)
@@ -156,8 +157,8 @@ class MedlineTest(TestCase, TestMixin):
     def testModifiedBefore(self):
         today = date.today()
         yesterday = today - timedelta(days=1)
-        m1 = Medline(1, 'MEDLINE', 'Journal 1', today)
-        m2 = Medline(2, 'MEDLINE', 'Journal 1', today)
+        m1 = Medline(1, 'MEDLINE', 'Journal 1', 'PubDate', today)
+        m2 = Medline(2, 'MEDLINE', 'Journal 1', 'PubDate', today)
         m1.modified = today
         m2.modified = yesterday
         self.sess.add(m1)
@@ -169,18 +170,21 @@ class MedlineTest(TestCase, TestMixin):
 
     def testToString(self):
         d = date.today()
-        r = Medline(1, 'MEDLINE', 'journal\\.', d)
-        line = "1\tMEDLINE\tjournal\\.\t{}\t\\N\t\\N\t{}\n".format(d.isoformat(), d.isoformat())
+        r = Medline(1, 'MEDLINE', 'journal\\.', 'PubDate', d)
+        line = "1\tMEDLINE\tjournal\\.\tPubDate\t\\N\t\\N\t{}\t\\N\t\\N\t{}\n".format(
+                d.isoformat(), d.isoformat()
+        )
         self.assertEqual(line, str(r))
 
     def testToRepr(self):
-        r = Medline(1, 'MEDLINE', 'journal', date.today())
+        r = Medline(1, 'MEDLINE', 'journal', 'PubDate', date.today())
         self.assertEqual("Medline<1>", repr(r))
 
     def testInsert(self):
         data = {
             Medline.__tablename__: [
-                dict(pmid=1, status='MEDLINE', journal='Journal', created=date.today())
+                dict(pmid=1, status='MEDLINE', journal='Journal', pub_date='PubDate',
+                     created=date.today())
             ],
             Section.__tablename__: [
                 dict(pmid=1, seq=1, name='Title', content='The title.')
@@ -218,9 +222,9 @@ class MedlineTest(TestCase, TestMixin):
     def testInsertMultiple(self):
         d = date.today()
         data = {Medline.__tablename__: [
-            dict(pmid=1, status='MEDLINE', journal='Journal 1', created=d),
-            dict(pmid=2, status='MEDLINE', journal='Journal 2', created=d),
-            dict(pmid=3, status='MEDLINE', journal='Journal 3', created=d)
+            dict(pmid=1, status='MEDLINE', journal='Journal 1', pub_date='PubDate', created=d),
+            dict(pmid=2, status='MEDLINE', journal='Journal 2', pub_date='PubDate', created=d),
+            dict(pmid=3, status='MEDLINE', journal='Journal 3', pub_date='PubDate', created=d)
         ]}
         Medline.insert(data)
         count = 0
@@ -234,9 +238,9 @@ class MedlineTest(TestCase, TestMixin):
         self.assertEqual(3, count)
 
     def addThree(self, d):
-        self.sess.add(Medline(1, 'MEDLINE', 'Journal 1', d))
-        self.sess.add(Medline(2, 'MEDLINE', 'Journal 2', d))
-        self.sess.add(Medline(3, 'MEDLINE', 'Journal X', d))
+        self.sess.add(Medline(1, 'MEDLINE', 'Journal 1', 'PubDate', d))
+        self.sess.add(Medline(2, 'MEDLINE', 'Journal 2', 'PubDate', d))
+        self.sess.add(Medline(3, 'MEDLINE', 'Journal X', 'PubDate', d))
         self.sess.commit()
 
     def testSelect(self):
@@ -276,7 +280,7 @@ class SectionTest(TestCase, TestMixin):
     def setUp(self):
         InitDb(URI, module=dbapi2)
         self.sess = Session()
-        self.M = Medline(1, 'MEDLINE', 'Journal', date.today())
+        self.M = Medline(1, 'MEDLINE', 'Journal', 'PubDate', date.today())
         self.sess.add(self.M)
         self.klass = Section
         self.entity = namedtuple('Section', 'pmid seq name content')
@@ -354,7 +358,7 @@ class DescriptorTest(TestCase, TestMixin):
     def setUp(self):
         InitDb(URI, module=dbapi2)
         self.sess = Session()
-        self.M = Medline(1, 'MEDLINE', 'Journal', date.today())
+        self.M = Medline(1, 'MEDLINE', 'Journal', 'PubDate', date.today())
         self.sess.add(self.M)
         self.klass = Descriptor
         self.entity = namedtuple('Descriptor', 'pmid num name')
@@ -455,7 +459,7 @@ class QualifierTest(TestCase, TestMixin):
     def setUp(self):
         InitDb(URI, module=dbapi2)
         self.sess = Session()
-        self.M = Medline(1, 'MEDLINE', 'Journal', date.today())
+        self.M = Medline(1, 'MEDLINE', 'Journal', 'PubDate', date.today())
         self.sess.add(self.M)
         self.D = Descriptor(1, 1, 'd_name', True)
         self.sess.add(self.D)
@@ -564,7 +568,7 @@ class AuthorTest(TestCase, TestMixin):
     def setUp(self):
         InitDb(URI, module=dbapi2)
         self.sess = Session()
-        self.M = Medline(1, 'MEDLINE', 'Journal', date.today())
+        self.M = Medline(1, 'MEDLINE', 'Journal', 'PubDate', date.today())
         self.sess.add(self.M)
         self.klass = Author
         self.entity = namedtuple('Author', 'pmid pos name')
@@ -666,7 +670,7 @@ class IdentifierTest(TestCase, TestMixin):
     def setUp(self):
         InitDb(URI, module=dbapi2)
         self.sess = Session()
-        self.M = Medline(1, 'MEDLINE', 'Journal', date.today())
+        self.M = Medline(1, 'MEDLINE', 'Journal', 'PubDate', date.today())
         self.sess.add(self.M)
         self.klass = Identifier
         self.entity = namedtuple('Identifier', 'pmid namespace value')
@@ -718,21 +722,21 @@ class IdentifierTest(TestCase, TestMixin):
 
     def testPmid2Doi(self):
         self.sess.add(Identifier(1, 'doi', 'id'))
-        self.sess.add(Medline(2, 'MEDLINE', 'Journal', date.today()))
+        self.sess.add(Medline(2, 'MEDLINE', 'Journal', 'PubDate', date.today()))
         self.sess.commit()
         self.assertEqual('id', Identifier.pmid2doi(1))
         self.assertEqual(None, Identifier.pmid2doi(2))
 
     def testDoi2Pmid(self):
         self.sess.add(Identifier(1, 'doi', 'id'))
-        self.sess.add(Medline(2, 'MEDLINE', 'Journal', date.today()))
+        self.sess.add(Medline(2, 'MEDLINE', 'Journal', 'PubDate', date.today()))
         self.sess.commit()
         self.assertEqual(1, Identifier.doi2pmid('id'))
         self.assertEqual(None, Identifier.doi2pmid('other'))
 
     def testMapPmids2Dois(self):
         self.sess.add(Identifier(1, 'doi', 'id1'))
-        self.sess.add(Medline(2, 'MEDLINE', 'Journal', date.today()))
+        self.sess.add(Medline(2, 'MEDLINE', 'Journal', 'PubDate', date.today()))
         self.sess.add(Identifier(2, 'doi', 'id2'))
         self.sess.commit()
         self.assertDictEqual({1: 'id1', 2: 'id2'}, Identifier.mapPmids2Dois([1, 2, 3]))
@@ -740,7 +744,7 @@ class IdentifierTest(TestCase, TestMixin):
 
     def testMapDois2Pmids(self):
         self.sess.add(Identifier(1, 'doi', 'id1'))
-        self.sess.add(Medline(2, 'MEDLINE', 'Journal', date.today()))
+        self.sess.add(Medline(2, 'MEDLINE', 'Journal', 'PubDate', date.today()))
         self.sess.add(Identifier(2, 'doi', 'id2'))
         self.sess.commit()
         self.assertDictEqual({'id1': 1, 'id2': 2},
@@ -752,7 +756,7 @@ class PublicationTypeTest(TestCase, TestMixin):
     def setUp(self):
         InitDb(URI, module=dbapi2)
         self.sess = Session()
-        self.M = Medline(1, 'MEDLINE', 'Journal', date.today())
+        self.M = Medline(1, 'MEDLINE', 'Journal', 'PubDate', date.today())
         self.sess.add(self.M)
         self.klass = PublicationType
         self.entity = namedtuple('PublicationType', 'pmid value')
@@ -798,7 +802,7 @@ class DatabaseTest(TestCase, TestMixin):
     def setUp(self):
         InitDb(URI, module=dbapi2)
         self.sess = Session()
-        self.M = Medline(1, 'MEDLINE', 'Journal', date.today())
+        self.M = Medline(1, 'MEDLINE', 'Journal', 'PubDate', date.today())
         self.sess.add(self.M)
         self.klass = Database
         self.entity = namedtuple('Database', 'pmid name accession')
@@ -853,7 +857,7 @@ class ChemicalTest(TestCase, TestMixin):
     def setUp(self):
         InitDb(URI, module=dbapi2)
         self.sess = Session()
-        self.M = Medline(1, 'MEDLINE', 'Journal', date.today())
+        self.M = Medline(1, 'MEDLINE', 'Journal', 'PubDate', date.today())
         self.sess.add(self.M)
         self.klass = Chemical
         self.entity = namedtuple('Chemical', 'pmid idx name')
@@ -915,7 +919,7 @@ class KeywordTest(TestCase, TestMixin):
     def setUp(self):
         InitDb(URI, module=dbapi2)
         self.sess = Session()
-        self.M = Medline(1, 'MEDLINE', 'Journal', date.today())
+        self.M = Medline(1, 'MEDLINE', 'Journal', 'PubDate', date.today())
         self.sess.add(self.M)
         self.klass = Keyword
         self.entity = namedtuple('Keyword', 'pmid owner cnt name')

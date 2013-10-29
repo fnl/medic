@@ -23,7 +23,7 @@ DATA = [
     PublicationType(1, 'another'),
     Chemical(1, 1, 'name', 'uid'),
     Keyword(1, 'NOTNLM', 1, 'name', True),
-    Medline(1, 'MEDLINE', 'journal', date.today()),
+    Medline(1, 'MEDLINE', 'journal', 'pub_date', date.today()),
 ]
 
 

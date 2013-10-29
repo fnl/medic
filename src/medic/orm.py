@@ -813,39 +813,46 @@ class Medline(_Base):
         order_by=Section.__table__.c.seq
     )
 
-    pmid = Column(BigInteger, CheckConstraint('pmid > 0'),
-                  primary_key=True, autoincrement=False)
+    pmid = Column(BigInteger, CheckConstraint('pmid > 0'), primary_key=True, autoincrement=False)
     status = Column(Enum(*STATES, name='state'), nullable=False)
-    journal = Column(Unicode(length=256), CheckConstraint("journal <> ''"),
-                     nullable=False)
+    journal = Column(Unicode(length=256), CheckConstraint("journal <> ''"), nullable=False)
+    pub_date = Column(Unicode(length=256), CheckConstraint("pub_date <> ''"), nullable=False)
+    issue = Column(Unicode(length=256), CheckConstraint("issue <> ''"), nullable=True)
+    pagination = Column(Unicode(length=256), CheckConstraint("pagination <> ''"), nullable=True)
     created = Column(Date, nullable=False)
     completed = Column(Date, nullable=True)
     revised = Column(Date, nullable=True)
-    modified = Column(
-        Date, default=date.today, onupdate=date.today, nullable=False
-    )
+    modified = Column(Date, default=date.today, onupdate=date.today, nullable=False)
 
-    def __init__(self, pmid: int, status: str, journal: str,
-                 created: date, completed: date=None, revised: date=None):
+    def __init__(self, pmid: int, status: str, journal: str, pub_date: str,
+                 created: date, completed: date=None, revised: date=None,
+                 issue: str=None, pagination: str=None):
         assert pmid > 0, pmid
         assert status in Medline.STATES, repr(status)
         assert journal, repr(journal)
+        assert pub_date, repr(pub_date)
         assert isinstance(created, date), repr(created)
         assert completed is None or isinstance(completed, date), repr(completed)
         assert revised is None or isinstance(revised, date), repr(revised)
+        assert pagination is None or pagination
+        assert issue is None or issue
         self.pmid = pmid
         self.status = status
         self.journal = journal
+        self.pub_date = pub_date
+        self.issue = issue
+        self.pagination = pagination
         self.created = created
         self.completed = completed
         self.revised = revised
 
     def __str__(self):
-        return '{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(
+        return '{}\n'.format('\t'.join(map(str, [
             NULL(self.pmid), NULL(self.status), NULL(self.journal),
+            NULL(self.pub_date), NULL(self.issue), NULL(self.pagination),
             DATE(self.created), DATE(self.completed), DATE(self.revised),
             DATE(date.today() if self.modified is None else self.modified)
-        )
+        ])))
 
     def __repr__(self):
         return "Medline<{}>".format(self.pmid)
@@ -855,9 +862,17 @@ class Medline(_Base):
                self.pmid == other.pmid and \
                self.status == other.status and \
                self.journal == other.journal and \
+               self.pub_date == other.pub_date and \
+               self.issue == other.issue and \
+               self.pagination == other.pagination and \
                self.created == other.created and \
                self.completed == other.completed and \
                self.revised == other.revised
+
+    def citation(self):
+        issue = '; {}'.format(self.issue) if self.issue else ""
+        pagination = ': {}'.format(self.pagination) if self.pagination else ""
+        return "{}{}{}".format(self.pub_date, issue, pagination)
 
     @classmethod
     def insert(cls, data: dict):

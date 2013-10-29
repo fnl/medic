@@ -2,7 +2,7 @@
 .
 .TH MEDIC  "" "" ""
 .SH NAME
-medic \- a command-line tool to maintain a DB mirror of MEDLINE
+medic \- a command-line tool to manage a mirror of MEDLINE
 .
 .nr rst2man-indent-level 0
 .
@@ -31,9 +31,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
 .sp
-The Swiss Army knife to parse MEDLINE XML files or
-download eUtils\(aq PubMed XML records,
-bootstrapping a MEDLINE/PubMed database,
+The Swiss Army knife to parse \fI\%MEDLINE\fP XML files or
+download eUtils\(aq \fI\%PubMed\fP XML records,
+bootstrapping a local MEDLINE/PubMed database,
 updating and/or deleting the records, and
 writing the contents of selected PMIDs into flat\-files.
 .SH SYNOPSIS
@@ -133,10 +133,10 @@ Create records in the DB by parsing MEDLINE XML files or
 by downloading PubMed XML from NCBI eUtils for a list of PMIDs.
 .TP
 .B \fBwrite\fP
-Write records as plaintext files to a directory, each file named as
-"<pmid>.txt", and containing most of the DB stored content or just the
-TIAB (title and abstract). In addition, a single file in TSV or HTML
-format can be generated (see option \fB\-\-format\fP).
+Write records as \fI\%MEDLINE\fP files to a directory, each file named as
+"<pmid>.txt". Alternatively, just the TIAB (title and abstract) plain\-text
+can be output, and finally, a single file in TSV or HTML format can be
+generated (see option \fB\-\-format\fP).
 .TP
 .B \fBupdate\fP
 Insert or update records in the DB (instead of creating them); note that
@@ -292,6 +292,7 @@ In short, this tool by default \fBremoves\fP alternate citations.
 .TP
 .B Medline (records)
 \fBpmid\fP:BIGINT, \fIstatus\fP:ENUM(state), \fIjournal\fP:VARCHAR(256),
+\fIpub_date\fP:VARCHAR(256), issue:VARCHAR(256), pagination:VARCHAR(256),
 \fIcreated\fP:DATE, completed:DATE, revised:DATE, modified:DATE
 .TP
 .B Section (sections)
@@ -382,6 +383,8 @@ ForeName (\fBAuthor.forename\fP)
 .IP \(bu 2
 Initials (\fBAuthor.initials\fP)
 .IP \(bu 2
+Issue (\fBMedline.issue\fP)
+.IP \(bu 2
 Keyword (\fBKeyword.value\fP with \fIOwner\fP as \fBKeyword.owner\fP and \fIMajorTopicYN\fP as \fBKeyword.major\fP)
 .IP \(bu 2
 LastName (\fBAuthor.name\fP)
@@ -392,9 +395,13 @@ MedlineTA (\fBMedline.journal\fP)
 .IP \(bu 2
 NameOfSubstance (\fBChemcial.name\fP)
 .IP \(bu 2
+MedlinePgn (\fBMedline.pagination\fP)
+.IP \(bu 2
 OtherID (\fBIdentifier.value\fP iff \fISource\fP is "PMC" with \fBIdentifier.namespace\fP as "pmc")
 .IP \(bu 2
 PMID (\fBMedline.pmid\fP)
+.IP \(bu 2
+PubDate (\fBMedline.pub_date\fP)
 .IP \(bu 2
 PublicationType (\fBPublicationType.value\fP)
 .IP \(bu 2
@@ -405,6 +412,8 @@ RegistryNumber (\fBChemical.uid\fP)
 Suffix (\fBAuthor.suffix\fP)
 .IP \(bu 2
 VernacularTitle (\fBSection.name\fP "Vernacular", \fBSection.content\fP)
+.IP \(bu 2
+Volume (\fBMedline.issue\fP)
 .UNINDENT
 .SH VERSION HISTORY
 .INDENT 0.0
@@ -413,6 +422,8 @@ VernacularTitle (\fBSection.name\fP "Vernacular", \fBSection.content\fP)
 .INDENT 7.0
 .IP \(bu 2
 added Keywords and PublicationTypes
+.IP \(bu 2
+added MEDLINE publication date, volume, issue, and pagination support
 .IP \(bu 2
 added MEDLINE output format and made it the default
 .IP \(bu 2

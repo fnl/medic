@@ -136,9 +136,23 @@ function toggleVisibility(pmid, target) {
 
     try:
         for rec in query:
-            logging.debug("writing PMID %i as HTML", rec.pmid)
-            p("<article id={}>".format(rec.pmid))
-            p("<p>{} ({})".format(rec.journal, dates(rec)))
+            logging.debug('writing PMID %i as HTML', rec.pmid)
+            citation = '{}, {}'.format(rec.journal, rec.citation())
+            p('<article id={}>'.format(rec.pmid))
+            link = None
+
+            if 'doi' in rec.identifiers:
+                link = '<a href="http://dx.doi.org/{}">'.format(rec.identifiers['doi'].value)
+            elif 'pmc' in rec.identifiers:
+                link = '<a href="http://www.ncbi.nlm.nih.gov/pmc/articles/{}">'.format(
+                        rec.identifiers['pmc'].value
+                )
+
+            if link:
+                p('<p class="citation">{}{}</a></p>'.format(link, citation))
+            else:
+                p('<p class="citation">{}</p>'.format(citation))
+
             copyright = None
 
             for sec in rec.sections:
@@ -301,6 +315,14 @@ def WriteMedlineRecord(rec, file):
     WriteMedlineItem('PMID', rec.pmid)
     WriteMedlineItem('STAT', rec.status)
     WriteMedlineItem('TA', rec.journal)
+
+    if rec.issue:
+        WriteMedlineItem('VI', rec.issue)
+
+    if rec.pagination:
+        WriteMedlineItem('PG', rec.pagination)
+
+    WriteMedlineItem('DP', rec.pub_date)
     WriteMedlineItem('DA', medlineDate(rec.created))
 
     if rec.revised:

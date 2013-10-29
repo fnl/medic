@@ -265,6 +265,14 @@
                 <NlmUniqueID>0123ABC</NlmUniqueID>
                 <ISSNLinking>0000-0000</ISSNLinking>
             </MedlineJournalInfo>
+            <Article>
+                <Journal><JournalIssue>
+                    <PubDate>
+                        <Year>year</Year>
+                        <Season>season</Season>
+                    </PubDate>
+                </JournalIssue></Journal>
+            </Article>
         </MedlineCitation>
         <ArticleId IdType="doi">some doi</ArticleId>
     </PubmedArticle>

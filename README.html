@@ -340,11 +340,11 @@ ul.auto-toc {
 <body>
 <div class="document" id="medic">
 <h1 class="title">medic</h1>
-<h2 class="subtitle" id="a-command-line-tool-to-maintain-a-db-mirror-of-medline">a command-line tool to maintain a DB mirror of MEDLINE</h2>
+<h2 class="subtitle" id="a-command-line-tool-to-manage-a-mirror-of-medline">a command-line tool to manage a mirror of MEDLINE</h2>
 
-<p>The Swiss Army knife to parse MEDLINE XML files or
-download eUtils' PubMed XML records,
-bootstrapping a MEDLINE/PubMed database,
+<p>The Swiss Army knife to parse <a class="reference external" href="http://www.nlm.nih.gov/bsd/mms/medlineelements.html">MEDLINE</a> XML files or
+download eUtils' <a class="reference external" href="http://www.ncbi.nlm.nih.gov/pubmed">PubMed</a> XML records,
+bootstrapping a local MEDLINE/PubMed database,
 updating and/or deleting the records, and
 writing the contents of selected PMIDs into flat-files.</p>
 <div class="section" id="synopsis">
@@ -403,10 +403,10 @@ be needed (default: <tt class="docutils literal"><span class="pre">postgresql://
 <dd>Create records in the DB by parsing MEDLINE XML files or
 by downloading PubMed XML from NCBI eUtils for a list of PMIDs.</dd>
 <dt><tt class="docutils literal">write</tt></dt>
-<dd>Write records as plaintext files to a directory, each file named as
-&quot;&lt;pmid&gt;.txt&quot;, and containing most of the DB stored content or just the
-TIAB (title and abstract). In addition, a single file in TSV or HTML
-format can be generated (see option <tt class="docutils literal"><span class="pre">--format</span></tt>).</dd>
+<dd>Write records as <a class="reference external" href="http://www.nlm.nih.gov/bsd/mms/medlineelements.html">MEDLINE</a> files to a directory, each file named as
+&quot;&lt;pmid&gt;.txt&quot;. Alternatively, just the TIAB (title and abstract) plain-text
+can be output, and finally, a single file in TSV or HTML format can be
+generated (see option <tt class="docutils literal"><span class="pre">--format</span></tt>).</dd>
 <dt><tt class="docutils literal">update</tt></dt>
 <dd>Insert or update records in the DB (instead of creating them); note that
 if a record exists, but is added with <tt class="docutils literal">create</tt>, this would throw an
@@ -512,6 +512,7 @@ do want to process other versions of a citation, use the option <tt class="docut
 <dl class="docutils">
 <dt>Medline (records)</dt>
 <dd><strong>pmid</strong>:BIGINT, <em>status</em>:ENUM(state), <em>journal</em>:VARCHAR(256),
+<em>pub_date</em>:VARCHAR(256), issue:VARCHAR(256), pagination:VARCHAR(256),
 <em>created</em>:DATE, completed:DATE, revised:DATE, modified:DATE</dd>
 <dt>Section (sections)</dt>
 <dd><strong>pmid</strong>:FK(Medline), <strong>seq</strong>:SMALLINT, <em>name</em>:ENUM(section),
@@ -572,18 +573,22 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),</dd>
 <li>ELocationID (<tt class="docutils literal">Identifier.value</tt> with <em>EIdType</em> as <tt class="docutils literal">Identifier.namespace</tt>)</li>
 <li>ForeName (<tt class="docutils literal">Author.forename</tt>)</li>
 <li>Initials (<tt class="docutils literal">Author.initials</tt>)</li>
+<li>Issue (<tt class="docutils literal">Medline.issue</tt>)</li>
 <li>Keyword (<tt class="docutils literal">Keyword.value</tt> with <em>Owner</em> as <tt class="docutils literal">Keyword.owner</tt> and <em>MajorTopicYN</em> as <tt class="docutils literal">Keyword.major</tt>)</li>
 <li>LastName (<tt class="docutils literal">Author.name</tt>)</li>
 <li>MedlineCitation (only <em>Status</em> as <tt class="docutils literal">Medline.status</tt>)</li>
 <li>MedlineTA (<tt class="docutils literal">Medline.journal</tt>)</li>
 <li>NameOfSubstance (<tt class="docutils literal">Chemcial.name</tt>)</li>
+<li>MedlinePgn (<tt class="docutils literal">Medline.pagination</tt>)</li>
 <li>OtherID (<tt class="docutils literal">Identifier.value</tt> iff <em>Source</em> is &quot;PMC&quot; with <tt class="docutils literal">Identifier.namespace</tt> as &quot;pmc&quot;)</li>
 <li>PMID (<tt class="docutils literal">Medline.pmid</tt>)</li>
+<li>PubDate (<tt class="docutils literal">Medline.pub_date</tt>)</li>
 <li>PublicationType (<tt class="docutils literal">PublicationType.value</tt>)</li>
 <li>QualifierName (<tt class="docutils literal">Qualifier.name</tt> with <em>MajorTopicYN</em> as <tt class="docutils literal">Qualifier.major</tt>)</li>
 <li>RegistryNumber (<tt class="docutils literal">Chemical.uid</tt>)</li>
 <li>Suffix (<tt class="docutils literal">Author.suffix</tt>)</li>
 <li>VernacularTitle (<tt class="docutils literal">Section.name</tt> &quot;Vernacular&quot;, <tt class="docutils literal">Section.content</tt>)</li>
+<li>Volume (<tt class="docutils literal">Medline.issue</tt>)</li>
 </ul>
 </div>
 </div>
@@ -593,6 +598,7 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),</dd>
 <dt>2.0.0</dt>
 <dd><ul class="first last simple">
 <li>added Keywords and PublicationTypes</li>
+<li>added MEDLINE publication date, volume, issue, and pagination support</li>
 <li>added MEDLINE output format and made it the default</li>
 <li>DB structure change: descriptors.major and qualifiers.major columns swapped</li>
 <li>DB structure change: section.name is now an untyped varchar (OtherAbstract separation)</li>

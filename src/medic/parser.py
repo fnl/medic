@@ -120,7 +120,7 @@ class Parser:
             yield int(pmid.text)
 
     def MedlineCitation(self, element):
-        dates = {}
+        options = {}
 
         for name, key in (('DateCompleted', 'completed'),
                           ('DateCreated', 'created'),
@@ -128,11 +128,62 @@ class Parser:
             e = element.find(name)
 
             if e is not None:
-                dates[key] = ParseDate(e)
+                options[key] = ParseDate(e)
 
+        created = options['created']
+        del options['created']
         status = element.get('Status')
         journal = element.find('MedlineJournalInfo').find('MedlineTA').text.strip()
-        return Medline(self.pmid, status, journal, **dates)
+        article = element.find('Article')
+        pub_date = self.parsePubDate(article.find('Journal/JournalIssue/PubDate'))
+        issue = self.parseIssue(article.find('Journal/JournalIssue'))
+        pagination = self.parsePagination(article.find('Pagination/MedlinePgn'))
+
+        if issue:
+            options['issue'] = issue
+        if pagination:
+            options['pagination'] = pagination
+
+        return Medline(self.pmid, status, journal, pub_date, created, **options)
+
+    def parsePubDate(self, element):
+        medline = element.find('MedlineDate')
+
+        if medline is not None:
+            return medline.text.strip()
+        else:
+            date = [element.find('Year').text.strip()]
+
+            if element.find('Season') is not None:
+                date.append(element.find('Season').text.strip())
+            elif element.find('Month') is not None:
+                date.append(element.find('Month').text.strip())
+
+                if element.find('Day') is not None:
+                    date.append(element.find('Day').text.strip())
+
+            return ' '.join(date)
+
+    def parseIssue(self, element):
+        if element is not None:
+            issue = None
+            vol = element.find('Volume')
+            iss = element.find('Issue')
+
+            if vol is not None and vol.text:
+                issue = vol.text.strip()
+
+            if iss is not None and iss.text:
+                if issue is None:
+                    issue = iss.text.strip()
+                else:
+                    issue = '{}({})'.format(issue, iss.text.strip())
+
+            return issue
+
+    def parsePagination(self, element):
+        if element is not None and element.text:
+            return element.text.strip()
 
     def PMID(self, element):
         pmid = int(element.text)
