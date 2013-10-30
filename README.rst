@@ -135,8 +135,8 @@ Parsing and loading the baseline into a PostgreSQL DB on the same machine::
 
   medic parse baseline/medline14n*.xml.gz
 
-  for table in records descriptors qualifiers authors \
-  sections databases identifiers chemicals keywords;
+  for table in records descriptors qualifiers authors sections \
+  databases identifiers chemicals keywords publication_types;
     do psql medline -c "COPY $table FROM '`pwd`/${table}.tab';";
   done
 
@@ -153,8 +153,8 @@ listed as ``DeleteCitation``\ s)::
   medic --pmid-lists delete delete.txt
 
   # load all tables; see below, loading baseline:
-  for table in records descriptors qualifiers authors \
-  sections databases identifiers chemicals keywords; 
+  for table in records descriptors qualifiers authors sections \
+  databases identifiers chemicals keywords publication_types; 
     do psql medline -c "COPY $table FROM '`pwd`/${table}.tab';";
   done
 

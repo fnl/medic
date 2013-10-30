@@ -234,8 +234,8 @@ Parsing and loading the baseline into a PostgreSQL DB on the same machine:
 .ft C
 medic parse baseline/medline14n*.xml.gz
 
-for table in records descriptors qualifiers authors \e
-sections databases identifiers chemicals keywords;
+for table in records descriptors qualifiers authors sections \e
+databases identifiers chemicals keywords publication_types;
   do psql medline \-c "COPY $table FROM \(aq\(gapwd\(ga/${table}.tab\(aq;";
 done
 .ft P
@@ -260,8 +260,8 @@ medic \-\-update parse medline14n1234.xml.gz
 medic \-\-pmid\-lists delete delete.txt
 
 # load all tables; see below, loading baseline:
-for table in records descriptors qualifiers authors \e
-sections databases identifiers chemicals keywords;
+for table in records descriptors qualifiers authors sections \e
+databases identifiers chemicals keywords publication_types;
   do psql medline \-c "COPY $table FROM \(aq\(gapwd\(ga/${table}.tab\(aq;";
 done
 .ft P
