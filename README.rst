@@ -149,10 +149,10 @@ listed as ``DeleteCitation``\ s)::
   # parse a MEDLINE update file:
   medic --update parse medline14n1234.xml.gz
 
-  # delete updated and DeleteCitation records:
+  # delete its updated and DeleteCitation records:
   medic --pmid-lists delete delete.txt
 
-  # load all tables; see below, loading baseline:
+  # load (COPY) all tables for that MEDLINE file:
   for table in records descriptors qualifiers authors sections \
   databases identifiers chemicals keywords publication_types; 
     do psql medline -c "COPY $table FROM '`pwd`/${table}.tab';";
