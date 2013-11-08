@@ -58,7 +58,7 @@ class ParserTest(TestCase):
         orm.Keyword(PMID, 'NASA', 1, 'NASA keyword'),
         orm.Medline(PMID, 'MEDLINE', 'NLM Jour Abbrev', 'some random date string',
                     date(1974, 2, 19), date(1974, 11, 19), date(2006, 2, 14),
-                    'vol 1 (no 1)', '100-10'),
+                    'vol 1(no 1)', '100-10'),
         orm.Medline(987, 'MEDLINE', 'NLM Jour Abbrev', 'year season',
                     date(1974, 2, 19), date(1974, 11, 19), date(2006, 2, 14)),
         orm.Identifier(987, 'doi', 'some doi'),

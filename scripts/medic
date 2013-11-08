@@ -18,7 +18,7 @@ import sys
 from sqlalchemy.exc import OperationalError
 
 __author__ = 'Florian Leitner'
-__version__ = '2.0.0'
+__version__ = '2.0.1'
 
 DATABANK_LINK = {
     'GDB': "#",

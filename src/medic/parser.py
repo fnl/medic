@@ -216,7 +216,7 @@ class MedlineXMLParser(Parser):
 
     def Abstract(self, element):
         for e in element.getchildren():
-            if element.text is not None and element.text.strip():
+            if e.text is not None and e.text.strip():
                 if e.tag == 'CopyrightInformation':
                     yield self.parseCopyrightInformation(e)
                 else:
@@ -367,7 +367,7 @@ class MedlineXMLParser(Parser):
         other = element.get('Type')
 
         for e in element.getchildren():
-            if element.text is not None and element.text.strip():
+            if e.text is not None and e.text.strip():
                 if e.tag == 'CopyrightInformation':
                     yield self.parseCopyrightInformation(e, other)
                 else:

@@ -272,6 +272,8 @@ Fields/Values
 Version History
 ===============
 
+2.0.1
+  - fixed a bug that lead to skipping of abstracts (thanks to Chris Roeder for detecting the issue)
 2.0.0
   - added Keywords and PublicationTypes
   - added MEDLINE publication date, volume, issue, and pagination support
