@@ -352,6 +352,7 @@ writing the contents of selected PMIDs into flat-files.</p>
 <pre class="literal-block">
 medic [options] CMD FILE|PMID...
 
+man medic
 medic --output /tmp parse baseline/medline*.xml.gz
 medic --update parse update/medline*.xml.gz
 medic --info delete delete.txt
@@ -618,6 +619,7 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),</dd>
 <li>made the use of <tt class="docutils literal"><span class="pre">--pmid-lists</span></tt> for <tt class="docutils literal">delete</tt> and <tt class="docutils literal">write</tt> implicit</li>
 <li>added instructions to bootstrap the tables in a PostgreSQL DB</li>
 <li>minor improvements to this manual</li>
+<li>fixed a bug when inserting/updating from MEDLINE XML files</li>
 </ul>
 </dd>
 <dt>2.0.1</dt>

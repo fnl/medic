@@ -18,6 +18,7 @@ Synopsis
 
   medic [options] CMD FILE|PMID...
 
+  man medic
   medic --output /tmp parse baseline/medline*.xml.gz
   medic --update parse update/medline*.xml.gz
   medic --info delete delete.txt
@@ -295,6 +296,7 @@ Version History
   - made the use of ``--pmid-lists`` for ``delete`` and ``write`` implicit
   - added instructions to bootstrap the tables in a PostgreSQL DB
   - minor improvements to this manual
+  - fixed a bug when inserting/updating from MEDLINE XML files
 2.0.1
   - fixed a bug that lead to skipping of abstracts (thanks to Chris Roeder for detecting the issue)
 2.0.0

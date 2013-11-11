@@ -129,7 +129,6 @@ def _add(session: Session, files_or_pmids: iter, dbHandle, unique: bool=True):
             try:
                 pmids.append(int(arg))
             except ValueError:
-                logger.info("parsing %s", arg)
                 count += _streamInstances(session, dbHandle, _fromFile(arg, unique))
 
         if len(pmids):
@@ -192,7 +191,7 @@ def _collectCitation(stream: iter) -> iter:
             if instance.pmid != pmid:
                 if citation:
                     yield citation
-                    citation.clear()
+                    citation = []
 
                 pmid = instance.pmid
                 logger.debug("collecting PMID %i", pmid)

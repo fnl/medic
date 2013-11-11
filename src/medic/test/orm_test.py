@@ -61,10 +61,10 @@ class TestMixin:
         self.sess.commit()
         self.assertEqual(instance, self.sess.query(self.klass).first())
 
-
     def assertDifference(self, **values):
         self.assertNotEqual(self.klass(*self.defaults._replace(**values)),
                             self.klass(*self.defaults))
+
 
 class MedlineTest(TestCase, TestMixin):
     def setUp(self):

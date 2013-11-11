@@ -44,6 +44,7 @@ writing the contents of selected PMIDs into flat\-files.
 .ft C
 medic [options] CMD FILE|PMID...
 
+man medic
 medic \-\-output /tmp parse baseline/medline*.xml.gz
 medic \-\-update parse update/medline*.xml.gz
 medic \-\-info delete delete.txt
@@ -461,6 +462,8 @@ made the use of \fB\-\-pmid\-lists\fP for \fBdelete\fP and \fBwrite\fP implicit
 added instructions to bootstrap the tables in a PostgreSQL DB
 .IP \(bu 2
 minor improvements to this manual
+.IP \(bu 2
+fixed a bug when inserting/updating from MEDLINE XML files
 .UNINDENT
 .TP
 .B 2.0.1

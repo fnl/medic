@@ -153,17 +153,17 @@ class Parser:
         if medline is not None:
             return medline.text.strip()
         else:
-            date = [element.find('Year').text.strip()]
+            datum = [element.find('Year').text.strip()]
 
             if element.find('Season') is not None:
-                date.append(element.find('Season').text.strip())
+                datum.append(element.find('Season').text.strip())
             elif element.find('Month') is not None:
-                date.append(element.find('Month').text.strip())
+                datum.append(element.find('Month').text.strip())
 
                 if element.find('Day') is not None:
-                    date.append(element.find('Day').text.strip())
+                    datum.append(element.find('Day').text.strip())
 
-            return ' '.join(date)
+            return ' '.join(datum)
 
     def parseIssue(self, element):
         if element is not None:

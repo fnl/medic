@@ -480,7 +480,7 @@ if __name__ == '__main__':
     if args.command not in ('parse', 'write', 'insert', 'update', 'delete'):
         parser.error('illegal command "{}"'.format(args.command))
 
-    if ags.command in ('write', 'delete'):
+    if args.command in ('write', 'delete'):
         args.pmid_lists = True
 
     def ParseListOrYield(file):
@@ -492,7 +492,7 @@ if __name__ == '__main__':
 
     if args.pmid_lists:
         args.files = [
-            pmid for pmid in ParseListOrYield(file) for file in args.files
+            pmid for f in args.files for pmid in ParseListOrYield(f)
         ]
 
     if args.command == 'parse':
