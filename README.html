@@ -352,13 +352,14 @@ writing the contents of selected PMIDs into flat-files.</p>
 <pre class="literal-block">
 medic [options] CMD FILE|PMID...
 
-medic parse baseline/medline*.xml.gz
+medic --output /tmp parse baseline/medline*.xml.gz
 medic --update parse update/medline*.xml.gz
-medic --pmid-lists delete delete.txt
-medic --url sqlite://tmp.db insert pubmed.xml
-medic --pmid-lists update changed_pmids.txt
-medic --all update pubmed.xml
-medic --format html --output /var/www/medline.html write 2874014 1028734 1298474
+medic --info delete delete.txt
+medic --url sqlite:///tmp.db insert pubmed.xml
+medic --pmid-lists update pmids_to_fetch_online.txt
+medic --all update medline13n1000.xml
+medic --format html write 1028734 1298474 &gt; out.html
+medic --logfile log.txt write pmid_list.txt
 </pre>
 </div>
 <div class="section" id="setup">
@@ -380,9 +381,16 @@ pip install psycopg2
 createdb medline
 </pre>
 <p>If you are fine working with SQLite, you only need to use the path to the
-SQLite DB file in the URL option:</p>
+SQLite DB file in the URL option (that will implicitly &quot;create&quot; the DB):</p>
 <pre class="literal-block">
 medic insert --url sqlite:///tmp.db 123456
+</pre>
+<p>To create the tables in the DB, you can &quot;try&quot; to fetch a record: As the DB
+is empy, this will not write anything, but SQL Alchemy will create the tables
+for you in the DB:</p>
+<pre class="literal-block">
+medic write 123 # for PostgreSQL
+medic --url sqlite:///tmp.db write 123 # for SQLite
 </pre>
 </div>
 <div class="section" id="description">
@@ -401,24 +409,30 @@ be needed (default: <tt class="docutils literal"><span class="pre">postgresql://
 <dl class="docutils">
 <dt><tt class="docutils literal">insert</tt></dt>
 <dd>Create records in the DB by parsing MEDLINE XML files or
-by downloading PubMed XML from NCBI eUtils for a list of PMIDs.</dd>
-<dt><tt class="docutils literal">write</tt></dt>
+by downloading PubMed XML from NCBI eUtils for a list of PMIDs.
+The insert fails if the record already exists in the DB.</dd>
+<dt><tt class="docutils literal">write</tt> *</dt>
 <dd>Write records as <a class="reference external" href="http://www.nlm.nih.gov/bsd/mms/medlineelements.html">MEDLINE</a> files to a directory, each file named as
 &quot;&lt;pmid&gt;.txt&quot;. Alternatively, just the TIAB (title and abstract) plain-text
 can be output, and finally, a single file in TSV or HTML format can be
-generated (see option <tt class="docutils literal"><span class="pre">--format</span></tt>).</dd>
+generated (see option <tt class="docutils literal"><span class="pre">--format</span></tt>).
+If the requested PMID does not exist in the DB, the command does not fail,
+but the relevant file, row, or element will not have been written.</dd>
 <dt><tt class="docutils literal">update</tt></dt>
 <dd>Insert or update records in the DB (instead of creating them); note that
 if a record exists, but is added with <tt class="docutils literal">create</tt>, this would throw an
 <cite>IntegrityError</cite>. If you are not sure if the records are in the DB or
 not, use <tt class="docutils literal">update</tt> (N.B. that <tt class="docutils literal">update</tt> is slower).</dd>
-<dt><tt class="docutils literal">delete</tt></dt>
-<dd>Delete records from the DB for a list of PMIDs (use <tt class="docutils literal"><span class="pre">--pmid-lists</span></tt>!)</dd>
+<dt><tt class="docutils literal">delete</tt> *</dt>
+<dd>Delete records from the DB for a list of PMIDs (using <tt class="docutils literal"><span class="pre">--pmid-lists</span></tt>)</dd>
 <dt><tt class="docutils literal">parse</tt></dt>
 <dd>Does not interact with the DB, but rather creates &quot;.tab&quot; files for each
 table that later can be used to load a database, particularly useful when
 bootstrapping a large collection.</dd>
 </dl>
+<p>* Note that <tt class="docutils literal">write</tt> and <tt class="docutils literal">delete</tt> can only use PMID lists (option
+<tt class="docutils literal"><span class="pre">--pmid-lists</span></tt>), so for these two commands, that option is always active
+(implicitly).</p>
 <p>For example, to download two PubMed records by PMID and update them in
 the DB:</p>
 <pre class="literal-block">
@@ -443,7 +457,7 @@ GNU-zipped files and the &quot;.gz&quot; suffix must be present.</p>
 <dd>are always treated as MEDLINE XML files to parse
 <strong>unless</strong> you use the option <tt class="docutils literal"><span class="pre">--pmid-lists</span></tt></dd>
 <dt>files ending in &quot;.gz&quot;</dt>
-<dd>are always treated as gzipped MEDLINE XML files</dd>
+<dd>are treated as gzipped MEDLINE XML files</dd>
 </dl>
 </div>
 <div class="section" id="requirements">
@@ -453,9 +467,8 @@ GNU-zipped files and the &quot;.gz&quot; suffix must be present.</p>
 <li>SQL Alchewy 0.8+</li>
 <li>PostgreSQL 8.4+ or SQLite 3.7+</li>
 </ul>
-<p><em>Note</em> that while any SQL Alchemy DB might work, it is <strong>strongly</strong> discouraged
-to use any other combination that PostgeSQL and psycogp2 or SQLite and the
-Python STDLIB drivers, because it has not been tested.</p>
+<p><em>Note</em> that while any DB supported by SQL Alchemy should work, all other DBs
+are <strong>untested</strong>.</p>
 </div>
 <div class="section" id="loading-medline">
 <h1>Loading MEDLINE</h1>
@@ -473,15 +486,15 @@ done
 </pre>
 <p>For the update files, you need to go <em>one-by-one</em>, adding each one <em>in order</em>,
 and using the flag <tt class="docutils literal"><span class="pre">--update</span></tt> when parsing the XML. After parsing an XML file
-and <em>before</em> loading the dump, run <tt class="docutils literal">medic delete <span class="pre">--pmid-lists</span> delete.txt</tt>
-to get rid of all entities that will be updated or should be removed (PMIDs
-listed as <tt class="docutils literal">DeleteCitation</tt>s):</p>
+and <em>before</em> loading the dump, run <tt class="docutils literal">medic delete delete.txt</tt> to get rid of
+all entities that will be updated or should be removed (PMIDs listed as
+<tt class="docutils literal">DeleteCitation</tt>s):</p>
 <pre class="literal-block">
 # parse a MEDLINE update file:
 medic --update parse medline14n1234.xml.gz
 
 # delete its updated and DeleteCitation records:
-medic --pmid-lists delete delete.txt
+medic delete delete.txt
 
 # load (COPY) all tables for that MEDLINE file:
 for table in records descriptors qualifiers authors sections \
@@ -489,23 +502,28 @@ databases identifiers chemicals keywords publication_types;
   do psql medline -c &quot;COPY $table FROM '`pwd`/${table}.tab';&quot;;
 done
 </pre>
+<p>Alternatively - simpler but slower - you can just <tt class="docutils literal">update</tt> from the XML
+directly:</p>
+<pre class="literal-block">
+medic update medline14n1234.xml.gz
+</pre>
 </div>
 <div class="section" id="version-ids">
 <h1>Version IDs</h1>
 <p>MEDLINE has began to use versions to allow publishers to add multiple citations
 for the same PMID. This only occurs with 71 articles from one journal,
 &quot;PLOS Curr&quot;, in the 2013 baseline, creating a total of 149 non-unique records.</p>
-<p>As this is the only journal and as there should only be one abstract per
-publication in the database, alternative versions are currently being ignored.
-In other words, if a MedlineCitation has a VersionID value, that records can
-be skipped to avoid DB errors from non-unique records.</p>
+<p>As this is the only journal and as there may only be one record per PMID in the
+database, alternative versions are currently being ignored. In other words, if
+a MedlineCitation has a VersionID value other than &quot;1&quot;, those records can be
+skipped to avoid DB errors from non-unique records.</p>
 <p>For example, in the 2013 baseline, PMID 20029614 is present ten times in the
 baseline, each version at a different stage of revision. Because it is the
 first entry (in the order they appear in the baseline files) without a
-<tt class="docutils literal">VersionID</tt> or a version of &quot;1&quot; that so far is the relevant record,
-<tt class="docutils literal">medic</tt> by default filters citations with other versions than &quot;1&quot;. If you
-do want to process other versions of a citation, use the option <tt class="docutils literal"><span class="pre">--all</span></tt>.</p>
-<p>In short, this tool by default <strong>removes</strong> alternate citations.</p>
+<tt class="docutils literal">VersionID</tt> or a version of &quot;1&quot; that is the relevant record, <tt class="docutils literal">medic</tt> by
+default filters citations with other versions than &quot;1&quot;. If you do want to
+process other versions of a citation, use the option <tt class="docutils literal"><span class="pre">--all</span></tt>.</p>
+<p>To summarize, <em>medic</em> by default <strong>removes</strong> alternate citations.</p>
 </div>
 <div class="section" id="database-tables">
 <h1>Database Tables</h1>
@@ -595,6 +613,13 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),</dd>
 <div class="section" id="version-history">
 <h1>Version History</h1>
 <dl class="docutils">
+<dt>2.0.2</dt>
+<dd><ul class="first last simple">
+<li>made the use of <tt class="docutils literal"><span class="pre">--pmid-lists</span></tt> for <tt class="docutils literal">delete</tt> and <tt class="docutils literal">write</tt> implicit</li>
+<li>added instructions to bootstrap the tables in a PostgreSQL DB</li>
+<li>minor improvements to this manual</li>
+</ul>
+</dd>
 <dt>2.0.1</dt>
 <dd><ul class="first last simple">
 <li>fixed a bug that lead to skipping of abstracts (thanks to Chris Roeder for detecting the issue)</li>

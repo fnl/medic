@@ -44,13 +44,14 @@ writing the contents of selected PMIDs into flat\-files.
 .ft C
 medic [options] CMD FILE|PMID...
 
-medic parse baseline/medline*.xml.gz
+medic \-\-output /tmp parse baseline/medline*.xml.gz
 medic \-\-update parse update/medline*.xml.gz
-medic \-\-pmid\-lists delete delete.txt
-medic \-\-url sqlite://tmp.db insert pubmed.xml
-medic \-\-pmid\-lists update changed_pmids.txt
-medic \-\-all update pubmed.xml
-medic \-\-format html \-\-output /var/www/medline.html write 2874014 1028734 1298474
+medic \-\-info delete delete.txt
+medic \-\-url sqlite:///tmp.db insert pubmed.xml
+medic \-\-pmid\-lists update pmids_to_fetch_online.txt
+medic \-\-all update medline13n1000.xml
+medic \-\-format html write 1028734 1298474 > out.html
+medic \-\-logfile log.txt write pmid_list.txt
 .ft P
 .fi
 .UNINDENT
@@ -98,13 +99,28 @@ createdb medline
 .UNINDENT
 .sp
 If you are fine working with SQLite, you only need to use the path to the
-SQLite DB file in the URL option:
+SQLite DB file in the URL option (that will implicitly "create" the DB):
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
 medic insert \-\-url sqlite:///tmp.db 123456
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+To create the tables in the DB, you can "try" to fetch a record: As the DB
+is empy, this will not write anything, but SQL Alchemy will create the tables
+for you in the DB:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+medic write 123 # for PostgreSQL
+medic \-\-url sqlite:///tmp.db write 123 # for SQLite
 .ft P
 .fi
 .UNINDENT
@@ -131,12 +147,15 @@ The five \fBCOMMAND\fP arguments:
 .B \fBinsert\fP
 Create records in the DB by parsing MEDLINE XML files or
 by downloading PubMed XML from NCBI eUtils for a list of PMIDs.
+The insert fails if the record already exists in the DB.
 .TP
-.B \fBwrite\fP
+.B \fBwrite\fP *
 Write records as \fI\%MEDLINE\fP files to a directory, each file named as
 "<pmid>.txt". Alternatively, just the TIAB (title and abstract) plain\-text
 can be output, and finally, a single file in TSV or HTML format can be
 generated (see option \fB\-\-format\fP).
+If the requested PMID does not exist in the DB, the command does not fail,
+but the relevant file, row, or element will not have been written.
 .TP
 .B \fBupdate\fP
 Insert or update records in the DB (instead of creating them); note that
@@ -144,14 +163,18 @@ if a record exists, but is added with \fBcreate\fP, this would throw an
 \fIIntegrityError\fP\&. If you are not sure if the records are in the DB or
 not, use \fBupdate\fP (N.B. that \fBupdate\fP is slower).
 .TP
-.B \fBdelete\fP
-Delete records from the DB for a list of PMIDs (use \fB\-\-pmid\-lists\fP!)
+.B \fBdelete\fP *
+Delete records from the DB for a list of PMIDs (using \fB\-\-pmid\-lists\fP)
 .TP
 .B \fBparse\fP
 Does not interact with the DB, but rather creates ".tab" files for each
 table that later can be used to load a database, particularly useful when
 bootstrapping a large collection.
 .UNINDENT
+.sp
+* Note that \fBwrite\fP and \fBdelete\fP can only use PMID lists (option
+\fB\-\-pmid\-lists\fP), so for these two commands, that option is always active
+(implicitly).
 .sp
 For example, to download two PubMed records by PMID and update them in
 the DB:
@@ -205,7 +228,7 @@ are always treated as MEDLINE XML files to parse
 \fBunless\fP you use the option \fB\-\-pmid\-lists\fP
 .TP
 .B files ending in ".gz"
-are always treated as gzipped MEDLINE XML files
+are treated as gzipped MEDLINE XML files
 .UNINDENT
 .SH REQUIREMENTS
 .INDENT 0.0
@@ -217,9 +240,8 @@ SQL Alchewy 0.8+
 PostgreSQL 8.4+ or SQLite 3.7+
 .UNINDENT
 .sp
-\fINote\fP that while any SQL Alchemy DB might work, it is \fBstrongly\fP discouraged
-to use any other combination that PostgeSQL and psycogp2 or SQLite and the
-Python STDLIB drivers, because it has not been tested.
+\fINote\fP that while any DB supported by SQL Alchemy should work, all other DBs
+are \fBuntested\fP\&.
 .SH LOADING MEDLINE
 .sp
 Please be aware that the MEDLINE distribution \fBis not unique\fP, meaning that
@@ -245,9 +267,9 @@ done
 .sp
 For the update files, you need to go \fIone\-by\-one\fP, adding each one \fIin order\fP,
 and using the flag \fB\-\-update\fP when parsing the XML. After parsing an XML file
-and \fIbefore\fP loading the dump, run \fBmedic delete \-\-pmid\-lists delete.txt\fP
-to get rid of all entities that will be updated or should be removed (PMIDs
-listed as \fBDeleteCitation\fPs):
+and \fIbefore\fP loading the dump, run \fBmedic delete delete.txt\fP to get rid of
+all entities that will be updated or should be removed (PMIDs listed as
+\fBDeleteCitation\fPs):
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -257,7 +279,7 @@ listed as \fBDeleteCitation\fPs):
 medic \-\-update parse medline14n1234.xml.gz
 
 # delete its updated and DeleteCitation records:
-medic \-\-pmid\-lists delete delete.txt
+medic delete delete.txt
 
 # load (COPY) all tables for that MEDLINE file:
 for table in records descriptors qualifiers authors sections \e
@@ -268,25 +290,38 @@ done
 .fi
 .UNINDENT
 .UNINDENT
+.sp
+Alternatively \- simpler but slower \- you can just \fBupdate\fP from the XML
+directly:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+medic update medline14n1234.xml.gz
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
 .SH VERSION IDS
 .sp
 MEDLINE has began to use versions to allow publishers to add multiple citations
 for the same PMID. This only occurs with 71 articles from one journal,
 "PLOS Curr", in the 2013 baseline, creating a total of 149 non\-unique records.
 .sp
-As this is the only journal and as there should only be one abstract per
-publication in the database, alternative versions are currently being ignored.
-In other words, if a MedlineCitation has a VersionID value, that records can
-be skipped to avoid DB errors from non\-unique records.
+As this is the only journal and as there may only be one record per PMID in the
+database, alternative versions are currently being ignored. In other words, if
+a MedlineCitation has a VersionID value other than "1", those records can be
+skipped to avoid DB errors from non\-unique records.
 .sp
 For example, in the 2013 baseline, PMID 20029614 is present ten times in the
 baseline, each version at a different stage of revision. Because it is the
 first entry (in the order they appear in the baseline files) without a
-\fBVersionID\fP or a version of "1" that so far is the relevant record,
-\fBmedic\fP by default filters citations with other versions than "1". If you
-do want to process other versions of a citation, use the option \fB\-\-all\fP\&.
+\fBVersionID\fP or a version of "1" that is the relevant record, \fBmedic\fP by
+default filters citations with other versions than "1". If you do want to
+process other versions of a citation, use the option \fB\-\-all\fP\&.
 .sp
-In short, this tool by default \fBremoves\fP alternate citations.
+To summarize, \fImedic\fP by default \fBremoves\fP alternate citations.
 .SH DATABASE TABLES
 .INDENT 0.0
 .TP
@@ -417,6 +452,16 @@ Volume (\fBMedline.issue\fP)
 .UNINDENT
 .SH VERSION HISTORY
 .INDENT 0.0
+.TP
+.B 2.0.2
+.INDENT 7.0
+.IP \(bu 2
+made the use of \fB\-\-pmid\-lists\fP for \fBdelete\fP and \fBwrite\fP implicit
+.IP \(bu 2
+added instructions to bootstrap the tables in a PostgreSQL DB
+.IP \(bu 2
+minor improvements to this manual
+.UNINDENT
 .TP
 .B 2.0.1
 .INDENT 7.0

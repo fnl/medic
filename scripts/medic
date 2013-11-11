@@ -6,10 +6,12 @@
 parse:   Medline XML files into raw table files for DB dumping; ==
 insert:  PubMed XML files or a list of PMIDs (contacting EUtils) into the DB
          (slower than using "parse" and a DB dump); ==
-update:  existing records or add new records from PubMed XML files or a list of PMIDs
-         (slow!); ==
-write:   records in various formats for a given list of PMIDs; ==
-delete:  records from the DB for a given list of PMIDs
+update:  existing records or add new records from PubMed XML files or a list
+         of PMIDs (slow!); ==
+write:   records in various formats for a given list of PMIDs (implicitly sets
+         --pmid-lists); ==
+delete:  records from the DB for a given list of PMIDs (implicitly sets
+         --pmid-lists)
 """
 import logging
 import os
@@ -18,7 +20,7 @@ import sys
 from sqlalchemy.exc import OperationalError
 
 __author__ = 'Florian Leitner'
-__version__ = '2.0.1'
+__version__ = '2.0.2'
 
 DATABANK_LINK = {
     'GDB': "#",
@@ -423,7 +425,8 @@ if __name__ == '__main__':
         help='one of {parse,insert,write,update,delete}; see above'
     )
     parser.add_argument(
-        'files', metavar='FILE/PMID', nargs='+', help='MEDLINE XML files or PMIDs [lists]'
+        'files', metavar='FILE/PMID', nargs='+',
+        help='MEDLINE XML file, PMID (integer), or PMID list file'
     )
     parser.add_argument('--version', action='version', version=__version__)
     parser.add_argument(
@@ -447,7 +450,8 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--pmid-lists', action='store_true',
-        help='assume input files are lists of PMIDs, not XML files'
+        help='assume input files are lists of PMIDs, not XML files ' +
+             '(implicitly set for delete and write operations)'
     )
     parser.add_argument(
         '--output', metavar='DIR', default=os.path.curdir,
@@ -476,8 +480,20 @@ if __name__ == '__main__':
     if args.command not in ('parse', 'write', 'insert', 'update', 'delete'):
         parser.error('illegal command "{}"'.format(args.command))
 
+    if ags.command in ('write', 'delete'):
+        args.pmid_lists = True
+
+    def ParseListOrYield(file):
+        if os.path.isfile(file):
+            for line in open(file):
+                yield line.strip()
+        else:
+            yield file
+
     if args.pmid_lists:
-        args.files = [int(line) for f in args.files for line in open(f)]
+        args.files = [
+            pmid for pmid in ParseListOrYield(file) for file in args.files
+        ]
 
     if args.command == 'parse':
         from medic.crud import dump

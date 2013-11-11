@@ -18,13 +18,14 @@ Synopsis
 
   medic [options] CMD FILE|PMID...
 
-  medic parse baseline/medline*.xml.gz
+  medic --output /tmp parse baseline/medline*.xml.gz
   medic --update parse update/medline*.xml.gz
-  medic --pmid-lists delete delete.txt
-  medic --url sqlite://tmp.db insert pubmed.xml
-  medic --pmid-lists update changed_pmids.txt
-  medic --all update pubmed.xml
-  medic --format html --output /var/www/medline.html write 2874014 1028734 1298474
+  medic --info delete delete.txt
+  medic --url sqlite:///tmp.db insert pubmed.xml
+  medic --pmid-lists update pmids_to_fetch_online.txt
+  medic --all update medline13n1000.xml
+  medic --format html write 1028734 1298474 > out.html
+  medic --logfile log.txt write pmid_list.txt
 
 Setup
 =====
@@ -46,9 +47,16 @@ Create the PostreSQL database::
   createdb medline 
 
 If you are fine working with SQLite, you only need to use the path to the
-SQLite DB file in the URL option::
+SQLite DB file in the URL option (that will implicitly "create" the DB)::
 
   medic insert --url sqlite:///tmp.db 123456
+
+To create the tables in the DB, you can "try" to fetch a record: As the DB
+is empy, this will not write anything, but SQL Alchemy will create the tables
+for you in the DB::
+
+  medic write 123 # for PostgreSQL
+  medic --url sqlite:///tmp.db write 123 # for SQLite
 
 Description
 ===========
@@ -69,22 +77,29 @@ The five **COMMAND** arguments:
 ``insert``
   Create records in the DB by parsing MEDLINE XML files or
   by downloading PubMed XML from NCBI eUtils for a list of PMIDs.
-``write``
+  The insert fails if the record already exists in the DB.
+``write`` *
   Write records as MEDLINE_ files to a directory, each file named as
   "<pmid>.txt". Alternatively, just the TIAB (title and abstract) plain-text
   can be output, and finally, a single file in TSV or HTML format can be
   generated (see option ``--format``).
+  If the requested PMID does not exist in the DB, the command does not fail,
+  but the relevant file, row, or element will not have been written.
 ``update``
   Insert or update records in the DB (instead of creating them); note that
   if a record exists, but is added with ``create``, this would throw an
   `IntegrityError`. If you are not sure if the records are in the DB or
   not, use ``update`` (N.B. that ``update`` is slower).
-``delete``
-  Delete records from the DB for a list of PMIDs (use ``--pmid-lists``!)
+``delete`` *
+  Delete records from the DB for a list of PMIDs (using ``--pmid-lists``)
 ``parse``
   Does not interact with the DB, but rather creates ".tab" files for each
   table that later can be used to load a database, particularly useful when
   bootstrapping a large collection.
+
+\* Note that ``write`` and ``delete`` can only use PMID lists (option
+``--pmid-lists``), so for these two commands, that option is always active
+(implicitly).
 
 For example, to download two PubMed records by PMID and update them in
 the DB::
@@ -111,7 +126,7 @@ all other values
   are always treated as MEDLINE XML files to parse
   **unless** you use the option ``--pmid-lists``
 files ending in ".gz"
-  are always treated as gzipped MEDLINE XML files
+  are treated as gzipped MEDLINE XML files
 
 Requirements
 ============
@@ -120,9 +135,8 @@ Requirements
 - SQL Alchewy 0.8+
 - PostgreSQL 8.4+ or SQLite 3.7+
 
-*Note* that while any SQL Alchemy DB might work, it is **strongly** discouraged
-to use any other combination that PostgeSQL and psycogp2 or SQLite and the
-Python STDLIB drivers, because it has not been tested.
+*Note* that while any DB supported by SQL Alchemy should work, all other DBs
+are **untested**.
 
 Loading MEDLINE
 ===============
@@ -142,21 +156,26 @@ Parsing and loading the baseline into a PostgreSQL DB on the same machine::
 
 For the update files, you need to go *one-by-one*, adding each one *in order*,
 and using the flag ``--update`` when parsing the XML. After parsing an XML file
-and *before* loading the dump, run ``medic delete --pmid-lists delete.txt``
-to get rid of all entities that will be updated or should be removed (PMIDs
-listed as ``DeleteCitation``\ s)::
+and *before* loading the dump, run ``medic delete delete.txt`` to get rid of
+all entities that will be updated or should be removed (PMIDs listed as
+``DeleteCitation``\ s)::
 
   # parse a MEDLINE update file:
   medic --update parse medline14n1234.xml.gz
 
   # delete its updated and DeleteCitation records:
-  medic --pmid-lists delete delete.txt
+  medic delete delete.txt
 
   # load (COPY) all tables for that MEDLINE file:
   for table in records descriptors qualifiers authors sections \
   databases identifiers chemicals keywords publication_types; 
     do psql medline -c "COPY $table FROM '`pwd`/${table}.tab';";
   done
+
+Alternatively - simpler but slower - you can just ``update`` from the XML
+directly::
+
+  medic update medline14n1234.xml.gz
 
 Version IDs
 ===========
@@ -165,19 +184,19 @@ MEDLINE has began to use versions to allow publishers to add multiple citations
 for the same PMID. This only occurs with 71 articles from one journal,
 "PLOS Curr", in the 2013 baseline, creating a total of 149 non-unique records.
 
-As this is the only journal and as there should only be one abstract per
-publication in the database, alternative versions are currently being ignored.
-In other words, if a MedlineCitation has a VersionID value, that records can
-be skipped to avoid DB errors from non-unique records.
+As this is the only journal and as there may only be one record per PMID in the
+database, alternative versions are currently being ignored. In other words, if
+a MedlineCitation has a VersionID value other than "1", those records can be
+skipped to avoid DB errors from non-unique records.
 
 For example, in the 2013 baseline, PMID 20029614 is present ten times in the
 baseline, each version at a different stage of revision. Because it is the
 first entry (in the order they appear in the baseline files) without a
-``VersionID`` or a version of "1" that so far is the relevant record,
-``medic`` by default filters citations with other versions than "1". If you
-do want to process other versions of a citation, use the option ``--all``.
+``VersionID`` or a version of "1" that is the relevant record, ``medic`` by
+default filters citations with other versions than "1". If you do want to
+process other versions of a citation, use the option ``--all``.
 
-In short, this tool by default **removes** alternate citations.
+To summarize, *medic* by default **removes** alternate citations.
 
 Database Tables
 ===============
@@ -272,6 +291,10 @@ Fields/Values
 Version History
 ===============
 
+2.0.2
+  - made the use of ``--pmid-lists`` for ``delete`` and ``write`` implicit
+  - added instructions to bootstrap the tables in a PostgreSQL DB
+  - minor improvements to this manual
 2.0.1
   - fixed a bug that lead to skipping of abstracts (thanks to Chris Roeder for detecting the issue)
 2.0.0
