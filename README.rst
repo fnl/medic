@@ -19,6 +19,7 @@ Synopsis
   medic [options] CMD FILE|PMID...
 
   man medic
+  medic --help
   medic --output /tmp parse baseline/medline*.xml.gz
   medic --update parse update/medline*.xml.gz
   medic --info delete delete.txt
