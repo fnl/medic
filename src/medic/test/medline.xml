@@ -58,7 +58,7 @@
                                   NlmCategory="CONCLUSIONS">conclusions text</AbstractText>
                     <AbstractText NlmCategory="UNLABELLED">unlabelled text with&#xa0;encoding&#x96;errors</AbstractText>
                     <AbstractText Label="abstract label">abstract text</AbstractText>
-                    <AbstractText>default text</AbstractText>
+                    <AbstractText NlmCategory="ABSTRACT">default text</AbstractText>
                     <CopyrightInformation>copyright info</CopyrightInformation>
                 </Abstract>
                 <Affiliation>affiliation string</Affiliation>
@@ -266,6 +266,7 @@
                 <ISSNLinking>0000-0000</ISSNLinking>
             </MedlineJournalInfo>
             <Article>
+                <ArticleTitle>title</ArticleTitle>
                 <Journal><JournalIssue>
                     <PubDate>
                         <Year>year</Year>

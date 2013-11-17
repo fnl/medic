@@ -15,8 +15,8 @@ from os.path import join
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from sqlalchemy.orm import Session
 
-from medic.orm import Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, \
-        Chemical, Keyword, PublicationType
+from medic.orm import Citation, Section, Abstract, Author, Descriptor, Qualifier, \
+        Database, Identifier, Chemical, Keyword, PublicationType
 from medic.parser import MedlineXMLParser, PubMedXMLParser, Parser
 from medic.web import Download
 
@@ -33,10 +33,10 @@ def update(session: Session, files_or_pmids: iter, uniq: bool) -> bool:
     _add(session, files_or_pmids, lambda i: session.merge(i), uniq)
 
 
-def select(session: Session, pmids: list([int])) -> iter([Medline]):
-    "Return an iterator over all `Medline` records for a list of *PMIDs*."
+def select(session: Session, pmids: list([int])) -> iter([Citation]):
+    "Return an iterator over all `Citation` records for a list of *PMIDs*."
     count = 0
-    for record in session.query(Medline).filter(Medline.pmid.in_(pmids)):
+    for record in session.query(Citation).filter(Citation.pmid.in_(pmids)):
         count += 1
         yield record
     logger.info("retrieved %i records", count)
@@ -44,7 +44,7 @@ def select(session: Session, pmids: list([int])) -> iter([Medline]):
 
 def delete(session: Session, pmids: list([int])) -> bool:
     "Delete all records for a list of *PMIDs*."
-    count = session.query(Medline).filter(Medline.pmid.in_(pmids)).delete(
+    count = session.query(Citation).filter(Citation.pmid.in_(pmids)).delete(
         synchronize_session=False
     )
     session.commit()
@@ -66,7 +66,8 @@ def dump(files: iter, output_dir: str, unique: bool, update: bool):
                    added to the list of PMIDs for deletion
     """
     out_stream = {
-        Medline.__tablename__: open(join(output_dir, "records.tab"), "wt"),
+        Citation.__tablename__: open(join(output_dir, "citations.tab"), "wt"),
+        Abstract.__tablename__: open(join(output_dir, "abstracts.tab"), "wt"),
         Section.__tablename__: open(join(output_dir, "sections.tab"), "wt"),
         Descriptor.__tablename__: open(join(output_dir, "descriptors.tab"), "wt"),
         Qualifier.__tablename__: open(join(output_dir, "qualifiers.tab"), "wt"),
@@ -110,7 +111,7 @@ def _dump(in_stream, out_stream: dict, parser: Parser, update: bool) -> int:
         else:
             out_stream[i.__tablename__].write(str(i))
 
-            if i.__tablename__ == Medline.__tablename__:
+            if i.__tablename__ == Citation.__tablename__:
                 count += 1
 
                 if update:
@@ -122,7 +123,7 @@ def _dump(in_stream, out_stream: dict, parser: Parser, update: bool) -> int:
 def _add(session: Session, files_or_pmids: iter, dbHandle, unique: bool=True):
     pmids = []
     count = 0
-    initial = session.query(Medline).count() if logger.isEnabledFor(logging.INFO) else 0
+    initial = session.query(Citation).count() if logger.isEnabledFor(logging.INFO) else 0
 
     try:
         for arg in files_or_pmids:
@@ -137,7 +138,7 @@ def _add(session: Session, files_or_pmids: iter, dbHandle, unique: bool=True):
         session.commit()
 
         if logger.isEnabledFor(logging.INFO):
-            final = session.query(Medline).count()
+            final = session.query(Citation).count()
             logger.info('parsed %i entities (records before/after: %i/%i)',
                         count, initial, final)
         return True
@@ -204,9 +205,9 @@ def _collectCitation(stream: iter) -> iter:
 
 def _handleCitation(handle, instances: list):
     "Handle a list of instances representing a citation."
-    # handle the Medline object first:
+    # handle the Citation object first:
     for idx in range(len(instances) - 1, -1, -1):
-        if isinstance(instances[idx], Medline):
+        if isinstance(instances[idx], Citation):
             logger.debug('handling PMID %s', instances[idx].pmid)
             handle(instances.pop(idx))
             break

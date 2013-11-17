@@ -5,13 +5,14 @@ from datetime import date
 from io import StringIO
 from tempfile import TemporaryFile
 
-from medic.orm import Medline, Section, Author, Descriptor, Qualifier, Database, Identifier, \
-        Chemical, Keyword, PublicationType
+from medic.orm import Citation, Section, Author, Descriptor, Qualifier, Database, Identifier, \
+        Chemical, Keyword, PublicationType, Abstract
 from medic.crud import _dump
 
 DATA = [
-    Section(1, 1, 'Title', 'The Title'),
-    Section(1, 2, 'Abstract', 'The Abstract'),
+    Abstract(1, 'NLM', None),
+    Section(1, 'NLM', 1, 'Abstract', 'The Abstract 1'),
+    Section(1, 'NLM', 2, 'Abstract', 'The Abstract 2'),
     Descriptor(1, 1, 'd_name', True),
     Descriptor(1, 2, 'd_name'),
     Qualifier(1, 1, 1, 'q_name', True),
@@ -23,7 +24,7 @@ DATA = [
     PublicationType(1, 'another'),
     Chemical(1, 1, 'name', 'uid'),
     Keyword(1, 'NOTNLM', 1, 'name', True),
-    Medline(1, 'MEDLINE', 'journal', 'pub_date', date.today()),
+    Citation(1, 'MEDLINE', 'title', 'journal', 'pub_date', date.today()),
 ]
 
 
@@ -40,7 +41,8 @@ class TestDump(unittest.TestCase):
 
     def setUp(self):
         self.out = {
-            Medline.__tablename__: StringIO(),
+            Citation.__tablename__: StringIO(),
+            Abstract.__tablename__: StringIO(),
             Section.__tablename__: StringIO(),
             Descriptor.__tablename__: StringIO(),
             Qualifier.__tablename__: StringIO(),
@@ -61,7 +63,7 @@ class TestDump(unittest.TestCase):
         parser = ParserMock(DATA)
         results = defaultdict(str)
         results['delete'] = "1\n".format(
-            Medline.__tablename__
+            Citation.__tablename__
         )
 
         for i in DATA:

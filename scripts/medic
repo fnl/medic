@@ -20,7 +20,7 @@ import sys
 from sqlalchemy.exc import OperationalError
 
 __author__ = 'Florian Leitner'
-__version__ = '2.0.2'
+__version__ = '2.1.0'
 
 DATABANK_LINK = {
     'GDB': "#",
@@ -37,11 +37,6 @@ DATABANK_LINK = {
     'PubChem-Compound': "http://pubchem.ncbi.nlm.nih.gov/summary/summary.cgi?cid=",
     'PubChem-BioAssay': "http://pubchem.ncbi.nlm.nih.gov/assay/assay.cgi?aid=",
 }
-
-ABSTRACT = frozenset({
-    'Methods', 'Conclusions', 'Abstract', 'Results', 'Unassigned',
-    'Background', 'Objective', 'Unlabelled'
-})
 
 
 def Main(command, files_or_pmids, session, unique=True):
@@ -64,18 +59,23 @@ def Main(command, files_or_pmids, session, unique=True):
 
 
 def WriteTabular(query, output_file: str):
-    def prune(strings):
-        return ' '.join(s.replace('\n', ' ').replace('\t', ' ') for s in strings)
+    def prune(string):
+        return string.replace('\n', ' ').replace('\t', ' ')
 
-    logging.debug("writing to file %s", output_file)
+    logging.debug("writing to TSV file %s", output_file)
     file = open(output_file, 'wt') if output_file != '.' else sys.stdout
 
     try:
         for rec in query:
-            logging.debug("writing PMID %i as TSV", rec.pmid)
-            title = prune(s.content for s in rec.sections if s.name == 'Title')
-            abstract = prune(s.content for s in rec.sections if s.name in ABSTRACT)
-            print(rec.pmid, title, abstract, sep='\t', file=file)
+            if 'NLM' in rec.abstracts:
+                abstract = ' '.join(prune(s.content) for s in rec.abstracts['NLM'].sections)
+            elif len(rec.abstracts) == 1:
+                key = [k for k in rec.abstracts][0]
+                abstract = ' '.join(prune(s.content) for s in rec.abstracts[key].sections)
+            else:
+                abstract = ''
+
+            print(rec.pmid, prune(rec.title), abstract, sep='\t', file=file)
     finally:
         if output_file != '.':
             file.close()
@@ -88,7 +88,7 @@ def WriteHTML(query, output_file: str):
         else:
             return '{}<br/>'.format(label.upper())
 
-    logging.debug("writing to file %s", output_file)
+    logging.debug("writing to HTML file %s", output_file)
     file = open(output_file, 'wt', encoding='utf-8') if output_file != '.' else sys.stdout
     p = lambda txt: print(txt, file=file)
     p("""<!doctype html>
@@ -130,18 +130,19 @@ function toggleVisibility(pmid, target) {
         lambda pmc:
         '<a href="http://www.ncbi.nlm.nih.gov/pmc/articles/{}">{}</a>'.format(pmc, pmc)
     )
-    dates = lambda rec: 'created: {}{}{}'.format(
-        rec.created,
-        "" if rec.completed is None else ", completed: {}".format(rec.completed),
-        "" if rec.revised is None else ", revised: {}".format(rec.revised))
+    # dates = lambda rec: 'created: {}{}{}'.format(
+    #     rec.created,
+    #     "" if rec.completed is None else ", completed: {}".format(rec.completed),
+    #     "" if rec.revised is None else ", revised: {}".format(rec.revised))
     formatMajor = lambda e: '<b>{}</b>'.format(e.name) if e.major else e.name
 
     try:
         for rec in query:
             logging.debug('writing PMID %i as HTML', rec.pmid)
             citation = '{}, {}'.format(rec.journal, rec.citation())
-            p('<article id={}>'.format(rec.pmid))
             link = None
+            pt_list = ', '.join(pt.value for pt in rec.publication_types)
+            p('<article id={}>'.format(rec.pmid))
 
             if 'doi' in rec.identifiers:
                 link = '<a href="http://dx.doi.org/{}">'.format(rec.identifiers['doi'].value)
@@ -151,30 +152,28 @@ function toggleVisibility(pmid, target) {
                 )
 
             if link:
-                p('<p class="citation">{}{}</a></p>'.format(link, citation))
+                p('<p class="citation"><small>{}{}</a> ({})</small></p>'.format(
+                    link, citation, pt_list))
             else:
-                p('<p class="citation">{}</p>'.format(citation))
+                p('<p class="citation"><small>{} ({})</small></p>'.format(citation, pt_list))
 
-            copyright = None
+            p('  <h1><a href="{}">{}</a></h1>\n  <ol>'.format(href(rec.pmid), rec.title))
 
-            for sec in rec.sections:
-                if sec.name == 'Title':
-                    p('  <h1><a href="{}">{}</a></h1>\n  <ol>'.format(href(rec.pmid), sec.content))
+            for author in rec.authors:
+                p('    <li>{}</li>'.format(author.fullName()))
 
-                    for author in rec.authors:
-                        p('    <li>{}</li>'.format(author.fullName()))
+            p('  </ol>')
 
-                    p('  </ol>')
-                elif sec.name == 'Copyright':
-                    copyright = sec.content
-                elif sec.name in ABSTRACT:
-                    p('  <section title="{}"><p>{}{}</p></section>'.format(
+            for source in rec.abstracts:
+                abstract = rec.abstracts[source]
+                p('  <h3>{} Abstract</h3>'.format(source))
+
+                for sec in abstract.sections:
+                    p('  <p title="{}">{}{}</p>'.format(
                         sec.name, MakeLabel(sec.label), sec.content))
-                else:
-                    logging.debug('dropping section %s', sec.name)
 
-            if copyright:
-                p('  <p class="copyright">{}</p>'.format(copyright))
+                if abstract.copyright:
+                    p('  <p title="Copyright"><small>{}</small></p>'.format(abstract.copyright))
 
             p('  <div title="Metadata">')
 
@@ -266,33 +265,37 @@ window.onload = function() {
 
 
 def WriteTIAB(query, output_dir: str):
-    logging.debug("writing to directory %s", output_dir)
+    logging.debug("writing TIAB to directory %s", output_dir)
 
     for rec in query:
         logging.debug("writing PMID %i as TIAB", rec.pmid)
         file = open(os.path.join(output_dir, "{}.txt".format(rec.pmid)), 'wt')
 
         try:
-            WriteSection(file, rec, 'Title')
+            print(rec.title, file=file)
 
-            for sec in ('Abstract', 'Background', 'Objective', 'Methods', 'Results',
-                        'Conclusions', 'Unlabelled'):
-                WriteSection(file, rec, sec)
+            if 'NLM' in rec.abstracts:
+                for sec in rec.abstracts['NLM'].sections:
+                    WriteSection(sec, file)
+            elif len(rec.abstracts) == 1:
+                for source in rec.abstracts:
+                    for sec in rec.abstracts[source].sections:
+                        WriteSection(sec, file)
         finally:
             file.close()
 
 
-def WriteSection(file, rec, sec):
-    for s in rec.sections:
-        if s.name == sec:
-            if (s.label is not None):
-                print(s.label, file=file)
+def WriteSection(sec, file):
+    print('', file=file)
 
-            print(s.content, end='\n\n', file=file)
+    if (sec.label is not None):
+        print(sec.label, file=file)
+
+    print(sec.content, file=file)
 
 
 def WriteMedline(query, output_dir: str):
-    logging.debug("writing to directory %s", output_dir)
+    logging.debug("writing MEDLINE to directory %s", output_dir)
 
     for rec in query:
         logging.debug("writing PMID %i as MEDLINE", rec.pmid)
@@ -310,21 +313,14 @@ def WriteMedlineRecord(rec, file):
             key[:4], str(value).replace('\\', '\\\\').replace('\n', '\\n')
         ), file=file)
 
-    abstract = []
-    other_abstract = []
+    addIfExists = lambda val: ' {}'.format(val) if val else ''
+    formatMajor = lambda e: '*{}'.format(e.name) if e.major else e.name
     medlineDate = lambda d: str(d).replace('-', '')
+    owner = None
+    source = "{}. {}".format(rec.journal, rec.pub_date)
 
     WriteMedlineItem('PMID', rec.pmid)
     WriteMedlineItem('STAT', rec.status)
-    WriteMedlineItem('TA', rec.journal)
-
-    if rec.issue:
-        WriteMedlineItem('VI', rec.issue)
-
-    if rec.pagination:
-        WriteMedlineItem('PG', rec.pagination)
-
-    WriteMedlineItem('DP', rec.pub_date)
     WriteMedlineItem('DA', medlineDate(rec.created))
 
     if rec.revised:
@@ -333,24 +329,23 @@ def WriteMedlineRecord(rec, file):
     if rec.completed:
         WriteMedlineItem('DCOM', medlineDate(rec.completed))
 
-    for sec in rec.sections:
-        if sec.name == 'Copyright':
-            WriteMedlineItem('CI', sec.content)
-        elif sec.name == 'Title':
-            WriteMedlineItem('TI', sec.content)
-        elif sec.name == 'Vernacular':
-            WriteMedlineItem('TT', sec.content)
-        elif sec.name in ABSTRACT:
-            abstract.append(sec.content)
-        elif sec.name.endswith('Copyright'):
-            WriteMedlineItem('OCI', sec.content)
-        else:
-            other_abstract.append(sec.content)
+    WriteMedlineItem('TA', rec.journal)
+    WriteMedlineItem('DP', rec.pub_date)
 
-    if abstract:
-        WriteMedlineItem('AB', ' '.join(abstract))
+    if rec.issue:
+        source += ';' + rec.issue
+        WriteMedlineItem('VI', rec.issue)
 
-    addIfExists = lambda val: ' {}'.format(val) if val else ''
+    if rec.pagination:
+        source += ':' + rec.pagination
+        WriteMedlineItem('PG', rec.pagination)
+
+    WriteMedlineItem('SO', source)
+
+    for pub_type in rec.publication_types:
+        WriteMedlineItem('PT', pub_type.value)
+
+    WriteMedlineItem('TI', rec.title)
 
     for author in rec.authors:
         if author.initials == '':  # corporate authors
@@ -365,13 +360,16 @@ def WriteMedlineRecord(rec, file):
                     author.name, author.forename, addIfExists(author.suffix)
                 ))
 
-    if other_abstract:
-        WriteMedlineItem('OAB', ' '.join(other_abstract))
+    for source in rec.abstracts:
+        abstract = rec.abstracts[source]
+        text = ' '.join(sec.content for sec in abstract.sections)
 
-    for pub_type in rec.publication_types:
-        WriteMedlineItem('PT', pub_type.value)
-
-    formatMajor = lambda e: '*{}'.format(e.name) if e.major else e.name
+        if source == 'NLM':
+            WriteMedlineItem('AB', text)
+            WriteMedlineItem('CI', abstract.copyright)
+        else:
+            WriteMedlineItem('OAB', "{}: {}".format(source, text))
+            WriteMedlineItem('OCI', "{} {}".format(source, abstract.copyright))
 
     for desc in rec.descriptors:
         heading = [formatMajor(desc)]
@@ -380,8 +378,6 @@ def WriteMedlineRecord(rec, file):
             heading.append(formatMajor(qual))
 
         WriteMedlineItem('MH', '/'.join(heading))
-
-    owner = None
 
     for kwd in rec.keywords:
         if kwd.owner != owner:

@@ -21,8 +21,8 @@ from sqlalchemy.types import \
     Boolean, BigInteger, Date, SmallInteger, Unicode, UnicodeText
 
 __all__ = [
-    'Medline', 'Author', 'Chemical', 'Database', 'Descriptor',
-    'Identifier', 'Keyword', 'Qualifier', 'Section', 'PublicationType'
+    'Citation', 'Abstract', 'Author', 'Chemical', 'Database', 'Descriptor',
+    'Identifier', 'Keyword', 'PublicationType', 'Qualifier', 'Section'
 ]
 
 _Base = declarative_base()
@@ -106,7 +106,7 @@ class SelectMixin(object):
     """
     Mixin for child tables to select rows (and columns)
     for a particular parent object
-    (i.e., `Medline`, except for `Qualifier`).
+    (i.e., `Citation`, except for `Qualifier`).
     """
 
     @classmethod
@@ -172,7 +172,7 @@ class Identifier(_Base, SelectMixin):
 
     __tablename__ = 'identifiers'
 
-    pmid = Column(BigInteger, ForeignKey('records', ondelete="CASCADE"), primary_key=True)
+    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
     namespace = Column(
         Unicode(length=32), CheckConstraint("namespace <> ''"), primary_key=True
     )
@@ -292,7 +292,7 @@ class Author(_Base, SelectMixin):
 
     __tablename__ = 'authors'
 
-    pmid = Column(BigInteger, ForeignKey('records', ondelete="CASCADE"), primary_key=True)
+    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
     pos = Column(SmallInteger, CheckConstraint("pos > 0"), primary_key=True)
     name = Column(
         UnicodeText, CheckConstraint("name <> ''"), nullable=False
@@ -384,7 +384,7 @@ class Qualifier(_Base, SelectMixin):
         ),
     )
 
-    pmid = Column(BigInteger, ForeignKey('records', ondelete="CASCADE"), primary_key=True)
+    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
     num = Column(SmallInteger, primary_key=True)
     sub = Column(SmallInteger, CheckConstraint("sub > 0"), primary_key=True)
     major = Column(Boolean, nullable=False)
@@ -444,7 +444,7 @@ class Descriptor(_Base, SelectMixin):
 
     __tablename__ = 'descriptors'
 
-    pmid = Column(BigInteger, ForeignKey('records', ondelete="CASCADE"), primary_key=True)
+    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
     num = Column(SmallInteger, CheckConstraint("num > 0"), primary_key=True)
     major = Column(Boolean, nullable=False)
     name = Column(UnicodeText, CheckConstraint("name <> ''"), nullable=False)
@@ -499,7 +499,7 @@ class Chemical(_Base, SelectMixin):
 
     __tablename__ = 'chemicals'
 
-    pmid = Column(BigInteger, ForeignKey('records', ondelete="CASCADE"), primary_key=True)
+    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
     idx = Column(SmallInteger, CheckConstraint("idx > 0"), primary_key=True)
     uid = Column(Unicode(length=256), CheckConstraint("uid <> ''"), nullable=True)
     name = Column(Unicode(length=256), CheckConstraint("name <> ''"), nullable=False)
@@ -546,7 +546,7 @@ class PublicationType(_Base, SelectMixin):
 
     __tablename__ = 'publication_types'
 
-    pmid = Column(BigInteger, ForeignKey('records', ondelete="CASCADE"), primary_key=True)
+    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
     value = Column(Unicode(length=256), CheckConstraint("value <> ''"), primary_key=True)
 
     def __init__(self, pmid: int, value: str):
@@ -585,7 +585,7 @@ class Database(_Base, SelectMixin):
 
     __tablename__ = 'databases'
 
-    pmid = Column(BigInteger, ForeignKey('records', ondelete="CASCADE"), primary_key=True)
+    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
     name = Column(Unicode(length=256), CheckConstraint("name <> ''"), primary_key=True)
     accession = Column(Unicode(length=256), CheckConstraint("accession <> ''"), primary_key=True)
 
@@ -637,7 +637,7 @@ class Keyword(_Base, SelectMixin):
 
     OWNERS = frozenset({'NASA', 'PIP', 'KIE', 'NLM', 'NOTNLM', 'HHS'})
 
-    pmid = Column(BigInteger, ForeignKey('records', ondelete="CASCADE"), primary_key=True)
+    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
     owner = Column(Enum(*OWNERS, name='owner'), primary_key=True)
     cnt = Column(SmallInteger, CheckConstraint("cnt > 0"), primary_key=True)
     major = Column(Boolean, nullable=False)
@@ -682,65 +682,132 @@ class Section(_Base, SelectMixin):
 
         pmid
             the record's identifier (PubMed ID)
+        source
+            the abstract's source (see `Abstract.SOURCES`)
         seq
-            the sequence of sections in the record (starting from 1)
+            the sequence of sections in the abstract (starting from 1)
         name
-            the name of the section (Title, Abstract, Vernacular, Copyright, ...)
+            the name of the section (Abstract, Background, Methods, Unlabelled, ...)
         label
             section label as defined by the publisher (if any)
         content
-            the text content of this section
+            the text content of the section
 
-    Primary Key: ``(pmid, seq)``
+    Primary Key: ``(pmid, source, seq)``
     """
     __tablename__ = 'sections'
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ('pmid', 'source'), ('abstracts.pmid', 'abstracts.source'),
+            ondelete="CASCADE"
+        ),
+    )
 
-    pmid = Column(BigInteger, ForeignKey('records', ondelete="CASCADE"), primary_key=True)
+    SOURCES = frozenset({'NLM', 'AAMC', 'AIDS', 'KIE', 'PIP', 'NASA', 'Publisher'})
+
+    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
+    source = Column(Enum(*SOURCES, name='source'), primary_key=True)
     seq = Column(SmallInteger, CheckConstraint("seq > 0"), primary_key=True)
     name = Column(Unicode(length=64), CheckConstraint("name <> ''"), nullable=False)
     label = Column(Unicode(length=256), CheckConstraint("label <> ''"), nullable=True)
     content = Column(UnicodeText, CheckConstraint("content <> ''"), nullable=False)
 
-    def __init__(self, pmid: int, seq: int, name: str, content: str, label: str=None):
+    def __init__(self, pmid: int, source: str, seq: int, name: str, content: str, label: str=None):
         assert pmid > 0, pmid
+        assert source in Section.SOURCES, repr(source)
         assert seq > 0, seq
         assert name, repr(name)
         assert content, repr(content)
         assert label is None or label, repr(label)
         self.pmid = pmid
+        self.source = source
         self.seq = seq
         self.name = name
         self.label = label
         self.content = content
 
     def __str__(self):
-        return '{}\t{}\t{}\t{}\t{}\n'.format(
-            NULL(self.pmid), NULL(self.seq), NULL(self.name),
+        return '{}\t{}\t{}\t{}\t{}\t{}\n'.format(
+            NULL(self.pmid), NULL(self.source), NULL(self.seq), NULL(self.name),
             NULL(self.label), STRING(self.content)
         )
 
     def __repr__(self):
-        return "Section<{}:{}>".format(self.pmid, self.seq)
+        return "Section<{}:{}:{}>".format(self.pmid, self.source, self.seq)
 
     def __eq__(self, other):
         return isinstance(other, Section) and \
                self.pmid == other.pmid and \
+               self.source == other.source and \
                self.seq == other.seq and \
                self.name == other.name and \
                self.label == other.label and \
                self.content == other.content
 
 
-class Medline(_Base):
+class Abstract(_Base, SelectMixin):
     """
-    A MEDLINE or PubMed record.
+    The abstract of the records.
+
+    Attributes:
+
+        pmid
+            the recor's identifier (PubMed ID)
+        source
+            the abstract's source (see `Abstract.SOURCES`)
+        copyright
+            the abstract's copyright notice (if any)
+
+    Primary Key: ``(pmid, source)``
+    """
+    __tablename__ = 'abstracts'
+
+    SOURCES = Section.SOURCES
+
+    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
+    source = Column(Enum(*SOURCES, name='source'), primary_key=True)
+    copyright = Column(UnicodeText, CheckConstraint("copyright <> ''"), nullable=True)
+
+    sections = relation(
+        Section, backref='abstract', cascade="all",
+        order_by=Section.__table__.c.seq
+    )
+
+    def __init__(self, pmid: int, source: str='NLM', copyright: str=None):
+        assert pmid > 0, pmid
+        assert source in Abstract.SOURCES
+        assert copyright is None or copyright, repr(copyright)
+        self.pmid = pmid
+        self.source = source
+        self.copyright = copyright
+
+    def __str__(self):
+        return '{}\t{}\t{}\n'.format(
+            NULL(self.pmid), NULL(self.source), NULL(self.copyright)
+        )
+
+    def __repr__(self):
+        return "Abstract<{}:{}>".format(self.pmid, self.source)
+
+    def __eq__(self, other):
+        return isinstance(other, Abstract) and \
+               self.pmid == other.pmid and \
+               self.source == other.source and \
+               self.copyright == other.copyright
+
+
+class Citation(_Base):
+    """
+    A MEDLINE or PubMed citation record.
 
     Attributes:
 
         pmid
             the record's identifier (PubMed ID)
         status
-            the current status of this record (see `Medline.STATES`)
+            the current status of this record (see `Citation.STATES`)
+        title
+            the record's title
         journal
             the journal name (Medline TA)
         created
@@ -781,40 +848,37 @@ class Medline(_Base):
     TABLENAMES = [cls.__tablename__ for cls in CHILDREN]
     TABLES = {cls.__tablename__: cls.__table__ for cls in CHILDREN}
 
-    __tablename__ = 'records'
+    __tablename__ = 'citations'
 
+    abstracts = relation(
+        Abstract, backref='citation', cascade='all, delete-orphan',
+        collection_class=column_mapped_collection(Abstract.source)
+    )
     authors = relation(
-        Author, backref='medline', cascade='all, delete-orphan',
+        Author, backref='citation', cascade='all, delete-orphan',
         order_by=Author.__table__.c.pos
     )
-    chemicals = relation(
-        Chemical, backref='medline', cascade='all, delete-orphan',
-        order_by=Chemical.__table__.c.idx
-    )
-    databases = relation(
-        Database, backref='medline', cascade='all, delete-orphan',
-    )
+    chemicals = relation(Chemical, backref='citation', cascade='all, delete-orphan')
+    databases = relation(Database, backref='citation', cascade='all, delete-orphan')
     descriptors = relation(
-        Descriptor, backref='medline', cascade='all, delete-orphan',
+        Descriptor, backref='citation', cascade='all, delete-orphan',
         order_by=Descriptor.__table__.c.num
     )
     identifiers = relation(
-        Identifier, backref='medline', cascade='all, delete-orphan',
+        Identifier, backref='citation', cascade='all, delete-orphan',
         collection_class=column_mapped_collection(Identifier.namespace)
     )
     keywords = relation(
-        Keyword, backref='medline', cascade='all, delete-orphan',
-        order_by=(Keyword.__table__.c.owner, Keyword.__table__.c.cnt)
+        Keyword, backref='citation', cascade='all, delete-orphan',
+        order_by=Keyword.__table__.c.owner
     )
-    publication_types = relation(PublicationType, backref='medline', cascade='all, delete-orphan')
-    qualifiers = relation(Qualifier, backref='medline')
-    sections = relation(
-        Section, backref='medline', cascade='all, delete-orphan',
-        order_by=Section.__table__.c.seq
-    )
+    publication_types = relation(PublicationType, backref='citation', cascade='all, delete-orphan')
+    qualifiers = relation(Qualifier, backref='citation')
+    sections = relation(Section, backref='citation')
 
     pmid = Column(BigInteger, CheckConstraint('pmid > 0'), primary_key=True, autoincrement=False)
     status = Column(Enum(*STATES, name='state'), nullable=False)
+    title = Column(UnicodeText, CheckConstraint("title <> ''"), nullable=False)
     journal = Column(Unicode(length=256), CheckConstraint("journal <> ''"), nullable=False)
     pub_date = Column(Unicode(length=256), CheckConstraint("pub_date <> ''"), nullable=False)
     issue = Column(Unicode(length=256), CheckConstraint("issue <> ''"), nullable=True)
@@ -824,11 +888,12 @@ class Medline(_Base):
     revised = Column(Date, nullable=True)
     modified = Column(Date, default=date.today, onupdate=date.today, nullable=False)
 
-    def __init__(self, pmid: int, status: str, journal: str, pub_date: str,
-                 created: date, completed: date=None, revised: date=None,
-                 issue: str=None, pagination: str=None):
+    def __init__(self,
+                 pmid: int, status: str, title: str, journal: str, pub_date: str, created: date,
+                 completed: date=None, revised: date=None, issue: str=None, pagination: str=None):
         assert pmid > 0, pmid
-        assert status in Medline.STATES, repr(status)
+        assert status in Citation.STATES, repr(status)
+        assert title, repr(title)
         assert journal, repr(journal)
         assert pub_date, repr(pub_date)
         assert isinstance(created, date), repr(created)
@@ -838,6 +903,7 @@ class Medline(_Base):
         assert issue is None or issue
         self.pmid = pmid
         self.status = status
+        self.title = title
         self.journal = journal
         self.pub_date = pub_date
         self.issue = issue
@@ -848,19 +914,20 @@ class Medline(_Base):
 
     def __str__(self):
         return '{}\n'.format('\t'.join(map(str, [
-            NULL(self.pmid), NULL(self.status), NULL(self.journal),
-            NULL(self.pub_date), NULL(self.issue), NULL(self.pagination),
+            NULL(self.pmid), NULL(self.status), STRING(self.title), STRING(self.journal),
+            STRING(self.pub_date), NULL(self.issue), NULL(self.pagination),
             DATE(self.created), DATE(self.completed), DATE(self.revised),
             DATE(date.today() if self.modified is None else self.modified)
         ])))
 
     def __repr__(self):
-        return "Medline<{}>".format(self.pmid)
+        return "Citation<{}>".format(self.pmid)
 
     def __eq__(self, other):
-        return isinstance(other, Medline) and \
+        return isinstance(other, Citation) and \
                self.pmid == other.pmid and \
                self.status == other.status and \
+               self.title == other.title and \
                self.journal == other.journal and \
                self.pub_date == other.pub_date and \
                self.issue == other.issue and \
@@ -892,8 +959,20 @@ class Medline(_Base):
                     cls.__table__.insert(), data[cls.__tablename__]
                 )
 
+            if Abstract.__tablename__ in data and len(data[Abstract.__tablename__]):
+                conn.execute(
+                    Abstract.__table__.insert(), data[Abstract.__tablename__]
+                )
+
+            if Descriptor.__tablename__ in data and len(data[Descriptor.__tablename__]):
+                conn.execute(
+                    Descriptor.__table__.insert(), data[Descriptor.__tablename__]
+                )
+
             for tname in cls.TABLENAMES:
-                if tname in data and len(data[tname]):
+                if tname == Descriptor.__tablename__ or tname == Abstract.__tablename__:
+                    pass
+                elif tname in data and len(data[tname]):
                     conn.execute(target_ins[tname], data[tname])
 
             transaction.commit()
@@ -975,7 +1054,7 @@ class Medline(_Base):
     @classmethod
     def missing(cls, pmids: list) -> set:
         "Return the sub- `set` of all *pmids* that do not exist in the DB."
-        return set(pmids) - Medline.existing(pmids)
+        return set(pmids) - Citation.existing(pmids)
 
     @classmethod
     def modifiedBefore(cls, pmids: list, before: date) -> set:

@@ -203,14 +203,17 @@ To summarize, *medic* by default **removes** alternate citations.
 Database Tables
 ===============
 
-Medline (records)
-  **pmid**:BIGINT, *status*:ENUM(state), *journal*:VARCHAR(256),
+Citation (citations)
+  **pmid**:BIGINT, *status*:ENUM(state), *title*:TEXT, *journal*:VARCHAR(256),
   *pub_date*:VARCHAR(256), issue:VARCHAR(256), pagination:VARCHAR(256),
   *created*:DATE, completed:DATE, revised:DATE, modified:DATE
 
+Abstract (abstracts)
+  **pmid**:FK(Citation), **source**:ENUM(type), copyright:TEXT
+
 Section (sections)
-  **pmid**:FK(Medline), **seq**:SMALLINT, *name*:ENUM(section),
-  label:VARCHAR(256), *content*:TEXT
+  **pmid**:FK(Medline), **source**:ENUM(type), **seq**:SMALLINT,
+  *name*:ENUM(section), label:VARCHAR(256), *content*:TEXT
 
 Author (authors)
   **pmid**:FK(Medline), **pos**:SMALLINT, *name*:TEXT,
@@ -246,8 +249,8 @@ Supported XML Elements
 Entities
 --------
 
-- The citation (``Medline`` and ``Identifier``)
-- Title, Abstract, and Copyright (``Section``)
+- MedlineCitation and ArticleTitle (``Medline`` and ``Identifier``)
+- Abstract and OtherAbstract (``Abstract`` and ``Section``)
 - Author (``Author``)
 - Chemical (``Chemcial``)
 - DataBank (``Database``)
@@ -259,12 +262,13 @@ Entities
 Fields/Values
 -------------
 
+- Abstract (with "NLM" as ``Abstract.source``)
 - AbstractText (``Section.name`` "Abstract" or the *NlmCategory*, ``Section.content`` with *Label* as ``Section.label``)
 - AccessionNumber (``Database.accession``)
 - ArticleId (``Identifier.value`` with *IdType* as ``Identifier.namesapce``; only available in online PubMed XML)
-- ArticleTitle (``Section.name`` "Title", ``Section.content``)
+- ArticleTitle (``Citation.title``)
 - CollectiveName (``Author.name``)
-- CopyrightInformation (``Section.name`` "Copyright", ``Section.content``)
+- CopyrightInformation (``Abstract.copyright``)
 - DataBankName (``Database.name``)
 - DateCompleted (``Medline.completed``)
 - DateCreated (``Medline.created``)
@@ -276,10 +280,11 @@ Fields/Values
 - Issue (``Medline.issue``)
 - Keyword (``Keyword.value`` with *Owner* as ``Keyword.owner`` and *MajorTopicYN* as ``Keyword.major``)
 - LastName (``Author.name``)
-- MedlineCitation (only *Status* as ``Medline.status``)
+- MedlineCitation (with *Status* as ``Medline.status``)
 - MedlineTA (``Medline.journal``)
 - NameOfSubstance (``Chemcial.name``)
 - MedlinePgn (``Medline.pagination``)
+- OtherAbstract (with *Type* as ``Abstract.source``)
 - OtherID (``Identifier.value`` iff *Source* is "PMC" with ``Identifier.namespace`` as "pmc")
 - PMID (``Medline.pmid``)
 - PubDate (``Medline.pub_date``)
@@ -293,6 +298,11 @@ Fields/Values
 Version History
 ===============
 
+2.1.0
+  - pruned title and copyright from Section and added source PK attribute
+  - new Abstract entity with copyright (Section with name "Copyright") 
+  - moved title (Section with name "Title") to Medline
+  - renamed Medline (records) to Citation (citations)
 2.0.2
   - made the use of ``--pmid-lists`` for ``delete`` and ``write`` implicit
   - added instructions to bootstrap the tables in a PostgreSQL DB
