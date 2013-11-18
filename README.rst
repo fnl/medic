@@ -151,8 +151,8 @@ Parsing and loading the baseline into a PostgreSQL DB on the same machine::
 
   medic parse baseline/medline14n*.xml.gz
 
-  for table in records descriptors qualifiers authors sections \
-  databases identifiers chemicals keywords publication_types;
+  for table in citations abstracts authors chemicals databases \
+  descriptors identifiers keywords publication_types qualifiers sections; 
     do psql medline -c "COPY $table FROM '`pwd`/${table}.tab';";
   done
 
@@ -169,8 +169,8 @@ all entities that will be updated or should be removed (PMIDs listed as
   medic delete delete.txt
 
   # load (COPY) all tables for that MEDLINE file:
-  for table in records descriptors qualifiers authors sections \
-  databases identifiers chemicals keywords publication_types; 
+  for table in citations abstracts authors chemicals databases \
+  descriptors identifiers keywords publication_types qualifiers sections; 
     do psql medline -c "COPY $table FROM '`pwd`/${table}.tab';";
   done
 

@@ -258,8 +258,8 @@ Parsing and loading the baseline into a PostgreSQL DB on the same machine:
 .ft C
 medic parse baseline/medline14n*.xml.gz
 
-for table in records descriptors qualifiers authors sections \e
-databases identifiers chemicals keywords publication_types;
+for table in citations abstracts authors chemicals databases \e
+descriptors identifiers keywords publication_types qualifiers sections;
   do psql medline \-c "COPY $table FROM \(aq\(gapwd\(ga/${table}.tab\(aq;";
 done
 .ft P
@@ -284,8 +284,8 @@ medic \-\-update parse medline14n1234.xml.gz
 medic delete delete.txt
 
 # load (COPY) all tables for that MEDLINE file:
-for table in records descriptors qualifiers authors sections \e
-databases identifiers chemicals keywords publication_types;
+for table in citations abstracts authors chemicals databases \e
+descriptors identifiers keywords publication_types qualifiers sections;
   do psql medline \-c "COPY $table FROM \(aq\(gapwd\(ga/${table}.tab\(aq;";
 done
 .ft P
@@ -327,14 +327,17 @@ To summarize, \fImedic\fP by default \fBremoves\fP alternate citations.
 .SH DATABASE TABLES
 .INDENT 0.0
 .TP
-.B Medline (records)
-\fBpmid\fP:BIGINT, \fIstatus\fP:ENUM(state), \fIjournal\fP:VARCHAR(256),
+.B Citation (citations)
+\fBpmid\fP:BIGINT, \fIstatus\fP:ENUM(state), \fItitle\fP:TEXT, \fIjournal\fP:VARCHAR(256),
 \fIpub_date\fP:VARCHAR(256), issue:VARCHAR(256), pagination:VARCHAR(256),
 \fIcreated\fP:DATE, completed:DATE, revised:DATE, modified:DATE
 .TP
+.B Abstract (abstracts)
+\fBpmid\fP:FK(Citation), \fBsource\fP:ENUM(type), copyright:TEXT
+.TP
 .B Section (sections)
-\fBpmid\fP:FK(Medline), \fBseq\fP:SMALLINT, \fIname\fP:ENUM(section),
-label:VARCHAR(256), \fIcontent\fP:TEXT
+\fBpmid\fP:FK(Medline), \fBsource\fP:ENUM(type), \fBseq\fP:SMALLINT,
+\fIname\fP:ENUM(section), label:VARCHAR(256), \fIcontent\fP:TEXT
 .TP
 .B Author (authors)
 \fBpmid\fP:FK(Medline), \fBpos\fP:SMALLINT, \fIname\fP:TEXT,
@@ -371,9 +374,9 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),
 .SS Entities
 .INDENT 0.0
 .IP \(bu 2
-The citation (\fBMedline\fP and \fBIdentifier\fP)
+MedlineCitation and ArticleTitle (\fBMedline\fP and \fBIdentifier\fP)
 .IP \(bu 2
-Title, Abstract, and Copyright (\fBSection\fP)
+Abstract and OtherAbstract (\fBAbstract\fP and \fBSection\fP)
 .IP \(bu 2
 Author (\fBAuthor\fP)
 .IP \(bu 2
@@ -392,17 +395,19 @@ DeleteCitation (for deleting records when parsing updates)
 .SS Fields/Values
 .INDENT 0.0
 .IP \(bu 2
+Abstract (with "NLM" as \fBAbstract.source\fP)
+.IP \(bu 2
 AbstractText (\fBSection.name\fP "Abstract" or the \fINlmCategory\fP, \fBSection.content\fP with \fILabel\fP as \fBSection.label\fP)
 .IP \(bu 2
 AccessionNumber (\fBDatabase.accession\fP)
 .IP \(bu 2
 ArticleId (\fBIdentifier.value\fP with \fIIdType\fP as \fBIdentifier.namesapce\fP; only available in online PubMed XML)
 .IP \(bu 2
-ArticleTitle (\fBSection.name\fP "Title", \fBSection.content\fP)
+ArticleTitle (\fBCitation.title\fP)
 .IP \(bu 2
 CollectiveName (\fBAuthor.name\fP)
 .IP \(bu 2
-CopyrightInformation (\fBSection.name\fP "Copyright", \fBSection.content\fP)
+CopyrightInformation (\fBAbstract.copyright\fP)
 .IP \(bu 2
 DataBankName (\fBDatabase.name\fP)
 .IP \(bu 2
@@ -426,13 +431,15 @@ Keyword (\fBKeyword.value\fP with \fIOwner\fP as \fBKeyword.owner\fP and \fIMajo
 .IP \(bu 2
 LastName (\fBAuthor.name\fP)
 .IP \(bu 2
-MedlineCitation (only \fIStatus\fP as \fBMedline.status\fP)
+MedlineCitation (with \fIStatus\fP as \fBMedline.status\fP)
 .IP \(bu 2
 MedlineTA (\fBMedline.journal\fP)
 .IP \(bu 2
 NameOfSubstance (\fBChemcial.name\fP)
 .IP \(bu 2
 MedlinePgn (\fBMedline.pagination\fP)
+.IP \(bu 2
+OtherAbstract (with \fIType\fP as \fBAbstract.source\fP)
 .IP \(bu 2
 OtherID (\fBIdentifier.value\fP iff \fISource\fP is "PMC" with \fBIdentifier.namespace\fP as "pmc")
 .IP \(bu 2
@@ -454,6 +461,18 @@ Volume (\fBMedline.issue\fP)
 .UNINDENT
 .SH VERSION HISTORY
 .INDENT 0.0
+.TP
+.B 2.1.0
+.INDENT 7.0
+.IP \(bu 2
+pruned title and copyright from Section and added source PK attribute
+.IP \(bu 2
+new Abstract entity with copyright (Section with name "Copyright")
+.IP \(bu 2
+moved title (Section with name "Title") to Medline
+.IP \(bu 2
+renamed Medline (records) to Citation (citations)
+.UNINDENT
 .TP
 .B 2.0.2
 .INDENT 7.0
