@@ -364,8 +364,17 @@ class MedlineXMLParser(Parser):
         )
 
     def OtherAbstract(self, element):
-        for item in self.parseAbstract(element, element.get('Type')):
-            yield item
+        children = element.getchildren()
+        source = element.get('Type')
+
+        # parse OtherAbstract only if it is not an abstract that only declares
+        # that the publisher has another language version available.
+        if (source != 'Publisher' or
+            len(children) != 1 or
+            children[0].tag != 'AbstractText' or
+            children[0].text.strip() != "Abstract available from the publisher."):
+            for item in self.parseAbstract(element, source):
+                yield item
 
     def OtherID(self, element):
         if element.get('Source', None) == 'NLM':
