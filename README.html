@@ -621,10 +621,18 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),</dd>
 <dl class="docutils">
 <dt>2.1.0</dt>
 <dd><ul class="first last simple">
-<li>pruned title and copyright from Section and added source PK attribute</li>
-<li>new Abstract entity with copyright (Section with name &quot;Copyright&quot;)</li>
-<li>moved title (Section with name &quot;Title&quot;) to Medline</li>
-<li>renamed Medline (records) to Citation (citations)</li>
+<li>DB schema change from: <tt class="docutils literal">records() <span class="pre">-&gt;</span> sections(content)</tt>
+to: <tt class="docutils literal">citations(title) <span class="pre">-&gt;</span> abstracts(copyright) <span class="pre">-&gt;</span> sections(content)</tt></li>
+<li>name change: the entity/table Medline/records is now called Citation/citations</li>
+<li>title and copyright text is no longer stored in Section/sections</li>
+<li>added a new Abstract/abstracts entity/table with a <tt class="docutils literal">copyright</tt> attribute
+(formerly stored in <tt class="docutils literal">sections.content</tt> with <tt class="docutils literal">name</tt> = 'Copyright')</li>
+<li>added a new <tt class="docutils literal">citations.title</tt> attribute
+(formerly stored in <tt class="docutils literal">sections.content</tt> with <tt class="docutils literal">name</tt> = 'Title')</li>
+<li>added a new <tt class="docutils literal">source</tt> primary-key attribute to Section and Abstract
+(set to either 'NLM' for regular Abstract elements or to
+the value of the OtherAbstract Type attribute for other abstracts)</li>
+<li>skipping &quot;Abstract available from the publisher.&quot;-only abstracts</li>
 </ul>
 </dd>
 <dt>2.0.2</dt>

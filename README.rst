@@ -299,10 +299,18 @@ Version History
 ===============
 
 2.1.0
-  - pruned title and copyright from Section and added source PK attribute
-  - new Abstract entity with copyright (Section with name "Copyright") 
-  - moved title (Section with name "Title") to Medline
-  - renamed Medline (records) to Citation (citations)
+  - DB schema change from: ``records() -> sections(content)``
+    to: ``citations(title) -> abstracts(copyright) -> sections(content)``
+  - name change: the entity/table Medline/records is now called Citation/citations
+  - title and copyright text is no longer stored in Section/sections
+  - added a new Abstract/abstracts entity/table with a ``copyright`` attribute
+    (formerly stored in ``sections.content`` with ``name`` = 'Copyright') 
+  - added a new ``citations.title`` attribute
+    (formerly stored in ``sections.content`` with ``name`` = 'Title') 
+  - added a new ``source`` primary-key attribute to Section and Abstract
+    (set to either 'NLM' for regular Abstract elements or to
+    the value of the OtherAbstract Type attribute for other abstracts)
+  - skipping "Abstract available from the publisher."-only abstracts
 2.0.2
   - made the use of ``--pmid-lists`` for ``delete`` and ``write`` implicit
   - added instructions to bootstrap the tables in a PostgreSQL DB
