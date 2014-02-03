@@ -369,10 +369,9 @@ class MedlineXMLParser(Parser):
 
         # parse OtherAbstract only if it is not an abstract that only declares
         # that the publisher has another language version available.
-        if (source != 'Publisher' or
-            len(children) != 1 or
-            children[0].tag != 'AbstractText' or
-            children[0].text.strip() != "Abstract available from the publisher."):
+        if (source != 'Publisher' or len(children) != 1 or
+                children[0].tag != 'AbstractText' or
+                children[0].text.strip() != "Abstract available from the publisher."):
             for item in self.parseAbstract(element, source):
                 yield item
 
