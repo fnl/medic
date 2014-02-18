@@ -251,7 +251,8 @@ if __name__ == '__main__':
     parser.add_argument('--version', action='version', version=__version__)
     parser.add_argument(
         '--url', metavar='URL',
-        help='a database URL string [postgresql://localhost/medline]',
+        help='a database URL string, e.g., sqlite:///tmp.db '
+             '[postgresql://localhost/medline]',
         default='postgresql://localhost/medline'
     )
     parser.add_argument(
