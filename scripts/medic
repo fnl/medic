@@ -23,19 +23,33 @@ __author__ = 'Florian Leitner'
 __version__ = '2.1.0'
 
 DATABANK_LINK = {
+    'DOI':
+    "http://dx.doi.org/",
     'GDB': "#",
-    'GENBANK': "http://www.ncbi.nlm.nih.gov/nucgss/",
-    'OMIM': "http://omim.org/entry/",
-    'PDB': "http://www.rcsb.org/pdb/explore/explore.do?structureId=",
+    'GENBANK':
+    "http://www.ncbi.nlm.nih.gov/nucgss/",
+    'OMIM':
+    "http://omim.org/entry/",
+    'PDB':
+    "http://www.rcsb.org/pdb/explore/explore.do?structureId=",
     'PIR': "#",
-    'RefSeq': "http://www.ncbi.nlm.nih.gov/nuccore/",
-    'SWISSPROT': "http://www.uniprot.org/uniprot/",
+    'PMC':
+    "http://www.ncbi.nlm.nih.gov/pmc/articles/",
+    'RefSeq':
+    "http://www.ncbi.nlm.nih.gov/nuccore/",
+    'SWISSPROT':
+    "http://www.uniprot.org/uniprot/",
     'ClinicalTrials.gov': "#",
     'ISRCTN': "#",
     'GEO': "#",
-    'PubChem-Substance': "http://pubchem.ncbi.nlm.nih.gov/summary/summary.cgi?sid=",
-    'PubChem-Compound': "http://pubchem.ncbi.nlm.nih.gov/summary/summary.cgi?cid=",
-    'PubChem-BioAssay': "http://pubchem.ncbi.nlm.nih.gov/assay/assay.cgi?aid=",
+    'PubChem-Substance':
+    "http://pubchem.ncbi.nlm.nih.gov/summary/summary.cgi?sid=",
+    'PubChem-Compound':
+    "http://pubchem.ncbi.nlm.nih.gov/summary/summary.cgi?cid=",
+    'PubChem-BioAssay':
+    "http://pubchem.ncbi.nlm.nih.gov/assay/assay.cgi?aid=",
+    'PubMed':
+    "http://www.ncbi.nlm.nih.gov/pubmed/",
 }
 
 
@@ -68,10 +82,14 @@ def WriteTabular(query, output_file: str):
     try:
         for rec in query:
             if 'NLM' in rec.abstracts:
-                abstract = ' '.join(prune(s.content) for s in rec.abstracts['NLM'].sections)
+                abstract = ' '.join(
+                    prune(s.content) for s in rec.abstracts['NLM'].sections
+                )
             elif len(rec.abstracts) == 1:
                 key = [k for k in rec.abstracts][0]
-                abstract = ' '.join(prune(s.content) for s in rec.abstracts[key].sections)
+                abstract = ' '.join(
+                    prune(s.content) for s in rec.abstracts[key].sections
+                )
             else:
                 abstract = ''
 
@@ -89,7 +107,9 @@ def WriteHTML(query, output_file: str):
             return '{}<br/>'.format(label.upper())
 
     logging.debug("writing to HTML file %s", output_file)
-    file = open(output_file, 'wt', encoding='utf-8') if output_file != '.' else sys.stdout
+    file = open(
+        output_file, 'wt', encoding='utf-8'
+    ) if output_file != '.' else sys.stdout
     p = lambda txt: print(txt, file=file)
     p("""<!doctype html>
 <html><head>
@@ -108,11 +128,14 @@ function toggleAll(items) {
     }
 }
 function toggleVisibility(pmid, target) {
-    var metadata = document.getElementById(pmid).getElementsByTagName('div').item(0)
+    var metadata = document.getElementById(
+      pmid
+    ).getElementsByTagName('div').item(0)
     var elements = metadata.childNodes;
     for (i = elements.length; i--; i != 0) {
       var e = elements.item(i)
-      if (typeof(e.getAttribute) != 'undefined' && e.getAttribute("class") == target) {
+      if (typeof(e.getAttribute) != 'undefined' &&
+          e.getAttribute("class") == target) {
         toggle(e)
       }
     }
@@ -120,20 +143,26 @@ function toggleVisibility(pmid, target) {
   </script>
 </head><body>""")  # .format(file.encoding))
 
-    href = lambda pmid: "http://www.ncbi.nlm.nih.gov/pubmed/{}".format(pmid)
+    href = lambda pmid: "{}{}".format(DATABANK_LINK['PubMed'], pmid)
     button = (
         lambda pmid, target, title:
-        '<button onclick="toggleVisibility({}, \'{}\')">{}</button>'.format(pmid, target, title)
+        '<button onclick="toggleVisibility({}, \'{}\')">{}</button>'.format(
+            pmid, target, title
+        )
     )
-    doi = lambda doi: '<a href="http://dx.doi.org/{}">{}</a>'.format(doi, doi)
+    doi = lambda doi: '<a href="{}{}">{}</a>'.format(
+        DATABANK_LINK['DOI'], doi, doi
+    )
     pmc = (
         lambda pmc:
-        '<a href="http://www.ncbi.nlm.nih.gov/pmc/articles/{}">{}</a>'.format(pmc, pmc)
+        '<a href="{}{}">{}</a>'.format(DATABANK_LINK['PMC'], pmc, pmc)
     )
     # dates = lambda rec: 'created: {}{}{}'.format(
     #     rec.created,
-    #     "" if rec.completed is None else ", completed: {}".format(rec.completed),
-    #     "" if rec.revised is None else ", revised: {}".format(rec.revised))
+    #     "" if rec.completed is None else
+    #     ", completed: {}".format(rec.completed),
+    #     "" if rec.revised is None else
+    #     ", revised: {}".format(rec.revised))
     formatMajor = lambda e: '<b>{}</b>'.format(e.name) if e.major else e.name
 
     try:
@@ -145,19 +174,28 @@ function toggleVisibility(pmid, target) {
             p('<article id={}>'.format(rec.pmid))
 
             if 'doi' in rec.identifiers:
-                link = '<a href="http://dx.doi.org/{}">'.format(rec.identifiers['doi'].value)
+                link = '<a href="{}{}">'.format(
+                    DATABANK_LINK['DOI'], rec.identifiers['doi'].value
+                )
             elif 'pmc' in rec.identifiers:
-                link = '<a href="http://www.ncbi.nlm.nih.gov/pmc/articles/{}">'.format(
-                        rec.identifiers['pmc'].value
+                link = '<a href="{}{}">'.format(
+                    DATABANK_LINK['PMC'], rec.identifiers['pmc'].value
                 )
 
             if link:
-                p('<p class="citation"><small>{}{}</a> ({})</small></p>'.format(
-                    link, citation, pt_list))
+                p('<p class="citation"><small>{}{}</a> '
+                  '({}, PMID:{})</small></p>'.format(
+                      link, citation, pt_list, rec.pmid
+                  ))
             else:
-                p('<p class="citation"><small>{} ({})</small></p>'.format(citation, pt_list))
+                p('<p class="citation"><small>{} '
+                  '({}, PMID:{})</small></p>'.format(
+                      citation, pt_list, rec.pmid
+                  ))
 
-            p('  <h1><a href="{}">{}</a></h1>\n  <ol>'.format(href(rec.pmid), rec.title))
+            p('  <h1><a href="{}">{}</a></h1>\n  <ol>'.format(
+                href(rec.pmid), rec.title
+            ))
 
             for author in rec.authors:
                 p('    <li>{}</li>'.format(author.fullName()))
@@ -173,7 +211,9 @@ function toggleVisibility(pmid, target) {
                         sec.name, MakeLabel(sec.label), sec.content))
 
                 if abstract.copyright:
-                    p('  <p title="Copyright"><small>{}</small></p>'.format(abstract.copyright))
+                    p('  <p title="Copyright"><small>{}</small></p>'.format(
+                        abstract.copyright
+                    ))
 
             p('  <div title="Metadata">')
 
@@ -206,7 +246,10 @@ function toggleVisibility(pmid, target) {
 
                 for chem in rec.chemicals:
                     p('      <li>{}{}</li>'.format(
-                        chem.name, "" if chem.uid is None else " ({})".format(chem.uid)))
+                        chem.name,
+                        "" if chem.uid is None else
+                        " ({})".format(chem.uid)
+                    ))
 
                 p('    </ul>')
 
@@ -232,9 +275,13 @@ function toggleVisibility(pmid, target) {
                 for xref in rec.databases:
                     try:
                         p('      <li>{} <a href="{}{}">{}</a></li>'.format(
-                            xref.name, DATABANK_LINK[xref.name], xref.accession, xref.accession))
+                            xref.name, DATABANK_LINK[xref.name],
+                            xref.accession, xref.accession
+                        ))
                     except KeyError:
-                        logging.error('unknown DB name: "{}"'.format(xref.name))
+                        logging.error('unknown DB name: "{}"'.format(
+                            xref.name
+                        ))
 
                 p('    </ul>')
 
@@ -352,12 +399,14 @@ def WriteMedlineRecord(rec, file):
             WriteMedlineItem('CN', author.name)
         else:
             WriteMedlineItem('AU', '{}{}{}'.format(
-                author.name, addIfExists(author.initials), addIfExists(author.suffix)
+                author.name, addIfExists(author.initials),
+                addIfExists(author.suffix)
             ))
 
             if author.forename:
                 WriteMedlineItem('FAU', '{}, {}{}'.format(
-                    author.name, author.forename, addIfExists(author.suffix)
+                    author.name, author.forename,
+                    addIfExists(author.suffix)
                 ))
 
     for source in rec.abstracts:
@@ -417,7 +466,9 @@ if __name__ == '__main__':
     parser.set_defaults(loglevel=logging.WARNING)
 
     parser.add_argument(
-        'command', metavar='CMD', choices=['parse', 'insert', 'write', 'update', 'delete'],
+        'command', metavar='CMD', choices=[
+            'parse', 'insert', 'write', 'update', 'delete'
+        ],
         help='one of {parse,insert,write,update,delete}; see above'
     )
     parser.add_argument(
@@ -426,15 +477,18 @@ if __name__ == '__main__':
     )
     parser.add_argument('--version', action='version', version=__version__)
     parser.add_argument(
-        '--url', metavar='URL', help='a database URL string [postgresql://localhost/medline]',
+        '--url', metavar='URL',
+        help='a database URL string [postgresql://localhost/medline]',
         default='postgresql://localhost/medline'
     )
     parser.add_argument(
         '--format', choices=['full', 'html', 'tiab', 'tsv'], default='medline',
-        help='medline: [default] write all content to one MEDLINE file per PMID; ' +
-             'tiab: write only title and abstract plain-text to files; ' +
-             'html: write all content to one large HTML file; ' +
-             'tsv: only write per line PMID-title-abstract to one single .tsv table'
+        help='medline: [default] '
+             'write all content to one MEDLINE file per PMID; '
+             'tiab: write only title and abstract plain-text to files; '
+             'html: write all content to one large HTML file; '
+             'tsv: only write per line PMID-title-abstract '
+             'to one single .tsv table'
     )
     parser.add_argument(
         '--all', action='store_true',
@@ -442,7 +496,8 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--update', action='store_true',
-        help='parsing MEDLINE update files: list all updated PMIDs in delete.sql'
+        help='parsing MEDLINE update files: '
+             'list all updated PMIDs in delete.sql'
     )
     parser.add_argument(
         '--pmid-lists', action='store_true',
@@ -451,7 +506,8 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--output', metavar='DIR', default=os.path.curdir,
-        help='dump/write to a specific directory (or file for format "tab" or "html")'
+        help='dump/write to a specific directory '
+             '(or file for format "tab" or "html")'
     )
     parser.add_argument(
         '--error', action='store_const', const=logging.ERROR,
@@ -465,7 +521,8 @@ if __name__ == '__main__':
         '--debug', action='store_const', const=logging.DEBUG,
         dest='loglevel', help='debug log level [warn]'
     )
-    parser.add_argument('--logfile', metavar='FILE', help='log to file, not STDERR')
+    parser.add_argument('--logfile', metavar='FILE',
+                        help='log to file, not STDERR')
 
     args = parser.parse_args()
     logging.basicConfig(
