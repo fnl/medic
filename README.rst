@@ -298,6 +298,9 @@ Fields/Values
 Version History
 ===============
 
+2.1.1
+  - added SQLite temporary DB example URL to help output
+  - refactored HTML output code
 2.1.0
   - DB schema change from: ``records() -> sections(content)``
     to: ``citations(title) -> abstracts(copyright) -> sections(content)``
