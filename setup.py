@@ -17,6 +17,7 @@ setup(
     long_description=long_description,
     install_requires=[
         'sqlalchemy >= 0.8',
+        'bumpversion >= 0.4',
     ],
     py_modules=['medic'],
     packages=[
