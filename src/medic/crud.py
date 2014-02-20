@@ -15,8 +15,8 @@ from os.path import join
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from sqlalchemy.orm import Session
 
-from medic.orm import Citation, Section, Abstract, Author, Descriptor, Qualifier, \
-        Database, Identifier, Chemical, Keyword, PublicationType
+from medic.orm import Citation, Section, Abstract, Author, Descriptor, \
+    Qualifier, Database, Identifier, Chemical, Keyword, PublicationType
 from medic.parser import MedlineXMLParser, PubMedXMLParser, Parser
 from medic.web import Download
 
@@ -66,17 +66,28 @@ def dump(files: iter, output_dir: str, unique: bool, update: bool):
                    added to the list of PMIDs for deletion
     """
     out_stream = {
-        Citation.__tablename__: open(join(output_dir, "citations.tab"), "wt"),
-        Abstract.__tablename__: open(join(output_dir, "abstracts.tab"), "wt"),
-        Section.__tablename__: open(join(output_dir, "sections.tab"), "wt"),
-        Descriptor.__tablename__: open(join(output_dir, "descriptors.tab"), "wt"),
-        Qualifier.__tablename__: open(join(output_dir, "qualifiers.tab"), "wt"),
-        Author.__tablename__: open(join(output_dir, "authors.tab"), "wt"),
-        Identifier.__tablename__: open(join(output_dir, "identifiers.tab"), "wt"),
-        Database.__tablename__: open(join(output_dir, "databases.tab"), "wt"),
-        PublicationType.__tablename__: open(join(output_dir, "publication_types.tab"), "wt"),
-        Chemical.__tablename__: open(join(output_dir, "chemicals.tab"), "wt"),
-        Keyword.__tablename__: open(join(output_dir, "keywords.tab"), "wt"),
+        Citation.__tablename__:
+        open(join(output_dir, "citations.tab"), "wt"),
+        Abstract.__tablename__:
+        open(join(output_dir, "abstracts.tab"), "wt"),
+        Section.__tablename__:
+        open(join(output_dir, "sections.tab"), "wt"),
+        Descriptor.__tablename__:
+        open(join(output_dir, "descriptors.tab"), "wt"),
+        Qualifier.__tablename__:
+        open(join(output_dir, "qualifiers.tab"), "wt"),
+        Author.__tablename__:
+        open(join(output_dir, "authors.tab"), "wt"),
+        Identifier.__tablename__:
+        open(join(output_dir, "identifiers.tab"), "wt"),
+        Database.__tablename__:
+        open(join(output_dir, "databases.tab"), "wt"),
+        PublicationType.__tablename__:
+        open(join(output_dir, "publication_types.tab"), "wt"),
+        Chemical.__tablename__:
+        open(join(output_dir, "chemicals.tab"), "wt"),
+        Keyword.__tablename__:
+        open(join(output_dir, "keywords.tab"), "wt"),
         'delete': open(join(output_dir, "delete.txt"), "wt"),
     }
     count = 0
@@ -123,14 +134,17 @@ def _dump(in_stream, out_stream: dict, parser: Parser, update: bool) -> int:
 def _add(session: Session, files_or_pmids: iter, dbHandle, unique: bool=True):
     pmids = []
     count = 0
-    initial = session.query(Citation).count() if logger.isEnabledFor(logging.INFO) else 0
+    initial = session.query(Citation).count() if \
+        logger.isEnabledFor(logging.INFO) else 0
 
     try:
         for arg in files_or_pmids:
             try:
                 pmids.append(int(arg))
             except ValueError:
-                count += _streamInstances(session, dbHandle, _fromFile(arg, unique))
+                count += _streamInstances(
+                    session, dbHandle, _fromFile(arg, unique)
+                )
 
         if len(pmids):
             count += _downloadAll(session, dbHandle, pmids, unique)
@@ -143,7 +157,7 @@ def _add(session: Session, files_or_pmids: iter, dbHandle, unique: bool=True):
                         count, initial, final)
         return True
     except IntegrityError:
-        logger.exception('DB integrity violated')
+        logger.exception('DB integrity violated (duplicate records?)')
         session.rollback()
         return False
     except DatabaseError:
@@ -219,7 +233,8 @@ def _handleCitation(handle, instances: list):
     return 1
 
 
-def _downloadAll(session: Session, dbHandle, pmids: list, unique: bool=True) -> int:
+def _downloadAll(session: Session, dbHandle,
+                 pmids: list, unique: bool=True) -> int:
     """
     Download PubMed XML for a list of PMIDs (integers), parse the streams,
     and send the ORM instances to a DB handle.
@@ -230,7 +245,8 @@ def _downloadAll(session: Session, dbHandle, pmids: list, unique: bool=True) -> 
     :param unique: if ``True``, only VersionID == "1" records are handled.
     """
     parser = PubMedXMLParser(unique)
-    pmid_sets = [pmids[100 * i:100 * i + 100] for i in range(len(pmids) // 100 + 1)]
+    pmid_sets = [pmids[100 * i:100 * i + 100]
+                 for i in range(len(pmids) // 100 + 1)]
     downloads = map(Download, pmid_sets)
     instances = map(parser.parse, downloads)
     streaming = partial(_streamInstances, session, dbHandle)
