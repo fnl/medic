@@ -14,7 +14,7 @@ from xml.etree.ElementTree import iterparse
 from datetime import date
 
 from medic.orm import Citation, Abstract, Author, Chemical, Database, \
-        Descriptor, Identifier, Keyword, PublicationType, Qualifier, Section
+    Descriptor, Identifier, Keyword, PublicationType, Qualifier, Section
 
 __all__ = ['MedlineXMLParser', 'PubMedXMLParser']
 
@@ -88,7 +88,10 @@ class Parser:
             version = element.get('VersionID')
 
             if version is not None and version.strip() != "1":
-                logger.debug('detected a citation with VersionID "%s"', version)
+                logger.debug(
+                    'detected a citation with VersionID "%s"',
+                    version
+                )
                 self.skipping()
 
     def yieldInstances(self, element):
@@ -134,19 +137,26 @@ class Parser:
         created = options['created']
         del options['created']
         status = element.get('Status')
-        journal = element.find('MedlineJournalInfo').find('MedlineTA').text.strip()
+        journal = element.find('MedlineJournalInfo').find(
+            'MedlineTA'
+        ).text.strip()
         article = element.find('Article')
         title = article.find('ArticleTitle').text.strip()
-        pub_date = self.parsePubDate(article.find('Journal/JournalIssue/PubDate'))
+        pub_date = self.parsePubDate(
+            article.find('Journal/JournalIssue/PubDate')
+        )
         issue = self.parseIssue(article.find('Journal/JournalIssue'))
-        pagination = self.parsePagination(article.find('Pagination/MedlinePgn'))
+        pagination = self.parsePagination(
+            article.find('Pagination/MedlinePgn')
+        )
 
         if issue:
             options['issue'] = issue
         if pagination:
             options['pagination'] = pagination
 
-        return Citation(self.pmid, status, title, journal, pub_date, created, **options)
+        return Citation(self.pmid, status, title, journal,
+                        pub_date, created, **options)
 
     def parsePubDate(self, element):
         medline = element.find('MedlineDate')
@@ -246,7 +256,9 @@ class MedlineXMLParser(Parser):
             yield self.parseAuthor(pos, author)
 
     def parseAuthor(self, pos, element):
-        name, forename, initials, suffix = self.parseAuthorElements(element.getchildren())
+        name, forename, initials, suffix = self.parseAuthorElements(
+            element.getchildren()
+        )
 
         if initials == forename and initials is not None:
             # prune the repetition of initials in the forename
@@ -255,8 +267,10 @@ class MedlineXMLParser(Parser):
         if name is not None:
             return Author(self.pmid, pos + 1, name, initials, forename, suffix)
         else:
-            logger.warning('empty or missing Author/LastName or CollectiveName in %i',
-                           self.pmid)
+            logger.warning(
+                'empty or missing Author/LastName or CollectiveName in %i',
+                self.pmid
+            )
             return None
 
     def parseAuthorElements(self, children):
@@ -286,7 +300,8 @@ class MedlineXMLParser(Parser):
                     logger.warning('unknown Author element %s "%s" in %i',
                                    child.tag, text, self.pmid)
             else:
-                logger.warning('empty Author element %s in %i"', child.tag, self.pmid)
+                logger.warning('empty Author element %s in %i"',
+                               child.tag, self.pmid)
 
         if forename and initials:
             if forename.replace(' ', '') == initials:
@@ -369,9 +384,11 @@ class MedlineXMLParser(Parser):
 
         # parse OtherAbstract only if it is not an abstract that only declares
         # that the publisher has another language version available.
-        if (source != 'Publisher' or len(children) != 1 or
-                children[0].tag != 'AbstractText' or
-                children[0].text.strip() != "Abstract available from the publisher."):
+        if (source != 'Publisher' or
+            len(children) != 1 or
+            children[0].tag != 'AbstractText' or
+            children[0].text.strip() !=
+                "Abstract available from the publisher."):
             for item in self.parseAbstract(element, source):
                 yield item
 
@@ -391,7 +408,8 @@ class MedlineXMLParser(Parser):
     # def VernacularTitle(self, element):
     #     if element.text is not None:
     #         self.seq += 1
-    #         return Section(self.pmid, self.seq, 'Vernacular', element.text.strip())
+    #         return Section(self.pmid, self.seq, 'Vernacular',
+    #                        element.text.strip())
 
 
 class PubMedXMLParser(MedlineXMLParser):
@@ -415,7 +433,7 @@ class PubMedXMLParser(MedlineXMLParser):
                 self.namespaces.add('doi')
                 instance = Identifier(self.pmid, 'doi', text)
             else:
-                logger.info('skipping duplicate %s identifier "%s"', ns, text)
+                logger.debug('skipping duplicate %s identifier "%s"', ns, text)
         else:
             self.namespaces.add(ns)
             instance = Identifier(self.pmid, ns, text)
