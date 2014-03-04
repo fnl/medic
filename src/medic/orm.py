@@ -68,7 +68,7 @@ def InitDb(*args, **kwds):
     return None
 
 
-def Session(*args, **kwds) -> session.Session:
+def Session(*args, **kwds):
     """
     Create a new DBAPI session object to work with.
 
@@ -77,7 +77,7 @@ def Session(*args, **kwds) -> session.Session:
     return _session(*args, **kwds)
 
 
-def _fetch_first(query) -> RowProxy:
+def _fetch_first(query):
     "Given a *query*, fetch the first row and return the first element or ``None``."
     conn = _db.engine.connect()
     logger.debug("%s", query)
@@ -90,7 +90,7 @@ def _fetch_first(query) -> RowProxy:
         conn.close()
 
 
-def _fetch_all(query) -> iter([RowProxy]):
+def _fetch_all(query):
     "Given a *query*, fetch and return all rows."
     conn = _db.engine.connect()
     logger.debug("%s", query)
@@ -126,7 +126,7 @@ class SelectMixin(object):
             return select(columns, cls.__table__.c.pmid == parent_pk)
 
     @classmethod
-    def select(cls, parent_pk, attributes) -> iter([RowProxy]):
+    def select(cls, parent_pk, attributes):
         """
         Return *attributes* columns for all rows that match the object's
         *parent_pk* (the pmid in most cases, but (pmid, num) for
@@ -144,7 +144,7 @@ class SelectMixin(object):
         return _fetch_all(query)
 
     @classmethod
-    def selectAll(cls, parent_pk) -> iter([RowProxy]):
+    def selectAll(cls, parent_pk):
         """
         Return all columns for all rows that match the *parent_pk*.
 
@@ -172,7 +172,7 @@ class Identifier(_Base, SelectMixin):
 
     __tablename__ = 'identifiers'
 
-    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
+    pmid = Column(BigInteger, ForeignKey('citations.pmid', ondelete="CASCADE"), primary_key=True)
     namespace = Column(
         Unicode(length=32), CheckConstraint("namespace <> ''"), primary_key=True
     )
@@ -203,7 +203,7 @@ class Identifier(_Base, SelectMixin):
                self.value == other.value
 
     @classmethod
-    def pmid2doi(cls, pmid: int) -> str:
+    def pmid2doi(cls, pmid: int):
         "Convert a PMID to a DOI (or ``None`` if no mapping is found)."
         c = cls.__table__.c
         query = select(
@@ -212,7 +212,7 @@ class Identifier(_Base, SelectMixin):
         return _fetch_first(query)
 
     @classmethod
-    def doi2pmid(cls, doi: str) -> int:
+    def doi2pmid(cls, doi: str):
         "Convert a DOI to a PMID (or ``None`` if no mapping is found)."
         c = cls.__table__.c
         query = select(
@@ -221,7 +221,7 @@ class Identifier(_Base, SelectMixin):
         return _fetch_first(query)
 
     @classmethod
-    def mapDois2Pmids(cls, dois: list) -> dict:
+    def mapDois2Pmids(cls, dois: list):
         """
         Return a mapping :class:`dict` for a list of DOIs to their PMIDs
         (or and empty :class:`dict` if no mapping is found).
@@ -240,7 +240,7 @@ class Identifier(_Base, SelectMixin):
         return dict(mappings) if mappings is not None else {}
 
     @classmethod
-    def mapPmids2Dois(cls, pmids: list) -> dict:
+    def mapPmids2Dois(cls, pmids: list):
         """
         Return a mapping :class:`dict` for a list of PMIDs to their DOIs
         (or and empty :class:`dict` if no mapping is found).
@@ -292,7 +292,7 @@ class Author(_Base, SelectMixin):
 
     __tablename__ = 'authors'
 
-    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
+    pmid = Column(BigInteger, ForeignKey('citations.pmid', ondelete="CASCADE"), primary_key=True)
     pos = Column(SmallInteger, CheckConstraint("pos > 0"), primary_key=True)
     name = Column(
         UnicodeText, CheckConstraint("name <> ''"), nullable=False
@@ -330,7 +330,7 @@ class Author(_Base, SelectMixin):
                self.forename == other.forename and \
                self.suffix == other.suffix
 
-    def fullName(self) -> str:
+    def fullName(self):
         """
         Return the full name of this author
         (using forename or initials, last, and suffix).
@@ -345,7 +345,7 @@ class Author(_Base, SelectMixin):
             name.append(self.suffix)
         return ' '.join(name)
 
-    def shortName(self) -> str:
+    def shortName(self):
         "Return the short name of this author (using initials and last)."
         name = []
         if self.initials:
@@ -384,7 +384,7 @@ class Qualifier(_Base, SelectMixin):
         ),
     )
 
-    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
+    pmid = Column(BigInteger, ForeignKey('citations.pmid', ondelete="CASCADE"), primary_key=True)
     num = Column(SmallInteger, primary_key=True)
     sub = Column(SmallInteger, CheckConstraint("sub > 0"), primary_key=True)
     major = Column(Boolean, nullable=False)
@@ -444,7 +444,7 @@ class Descriptor(_Base, SelectMixin):
 
     __tablename__ = 'descriptors'
 
-    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
+    pmid = Column(BigInteger, ForeignKey('citations.pmid', ondelete="CASCADE"), primary_key=True)
     num = Column(SmallInteger, CheckConstraint("num > 0"), primary_key=True)
     major = Column(Boolean, nullable=False)
     name = Column(UnicodeText, CheckConstraint("name <> ''"), nullable=False)
@@ -499,7 +499,7 @@ class Chemical(_Base, SelectMixin):
 
     __tablename__ = 'chemicals'
 
-    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
+    pmid = Column(BigInteger, ForeignKey('citations.pmid', ondelete="CASCADE"), primary_key=True)
     idx = Column(SmallInteger, CheckConstraint("idx > 0"), primary_key=True)
     uid = Column(Unicode(length=256), CheckConstraint("uid <> ''"), nullable=True)
     name = Column(Unicode(length=256), CheckConstraint("name <> ''"), nullable=False)
@@ -546,7 +546,7 @@ class PublicationType(_Base, SelectMixin):
 
     __tablename__ = 'publication_types'
 
-    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
+    pmid = Column(BigInteger, ForeignKey('citations.pmid', ondelete="CASCADE"), primary_key=True)
     value = Column(Unicode(length=256), CheckConstraint("value <> ''"), primary_key=True)
 
     def __init__(self, pmid: int, value: str):
@@ -585,7 +585,7 @@ class Database(_Base, SelectMixin):
 
     __tablename__ = 'databases'
 
-    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
+    pmid = Column(BigInteger, ForeignKey('citations.pmid', ondelete="CASCADE"), primary_key=True)
     name = Column(Unicode(length=256), CheckConstraint("name <> ''"), primary_key=True)
     accession = Column(Unicode(length=256), CheckConstraint("accession <> ''"), primary_key=True)
 
@@ -637,7 +637,7 @@ class Keyword(_Base, SelectMixin):
 
     OWNERS = frozenset({'NASA', 'PIP', 'KIE', 'NLM', 'NOTNLM', 'HHS'})
 
-    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
+    pmid = Column(BigInteger, ForeignKey('citations.pmid', ondelete="CASCADE"), primary_key=True)
     owner = Column(Enum(*OWNERS, name='owner'), primary_key=True)
     cnt = Column(SmallInteger, CheckConstraint("cnt > 0"), primary_key=True)
     major = Column(Boolean, nullable=False)
@@ -705,7 +705,7 @@ class Section(_Base, SelectMixin):
 
     SOURCES = frozenset({'NLM', 'AAMC', 'AIDS', 'KIE', 'PIP', 'NASA', 'Publisher'})
 
-    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
+    pmid = Column(BigInteger, ForeignKey('citations.pmid', ondelete="CASCADE"), primary_key=True)
     source = Column(Enum(*SOURCES, name='source'), primary_key=True)
     seq = Column(SmallInteger, CheckConstraint("seq > 0"), primary_key=True)
     name = Column(Unicode(length=64), CheckConstraint("name <> ''"), nullable=False)
@@ -764,7 +764,7 @@ class Abstract(_Base, SelectMixin):
 
     SOURCES = Section.SOURCES
 
-    pmid = Column(BigInteger, ForeignKey('citations', ondelete="CASCADE"), primary_key=True)
+    pmid = Column(BigInteger, ForeignKey('citations.pmid', ondelete="CASCADE"), primary_key=True)
     source = Column(Enum(*SOURCES, name='source'), primary_key=True)
     copyright = Column(UnicodeText, CheckConstraint("copyright <> ''"), nullable=True)
 
@@ -983,7 +983,7 @@ class Citation(_Base):
             conn.close()
 
     @classmethod
-    def select(cls, pmids: list, attributes: iter) -> iter([RowProxy]):
+    def select(cls, pmids: list, attributes: iter):
         """
         Return the `pmid` and *attributes*
         for each row as a `sqlalchemy.engine.RowProxy`
@@ -1000,7 +1000,7 @@ class Citation(_Base):
         return _fetch_all(query)
 
     @classmethod
-    def selectAll(cls, pmids: list) -> iter([RowProxy]):
+    def selectAll(cls, pmids: list):
         """
         Return all columns
         for each row as a `sqlalchemy.engine.RowProxy`
@@ -1037,7 +1037,7 @@ class Citation(_Base):
             conn.close()
 
     @classmethod
-    def existing(cls, pmids: list) -> set:
+    def existing(cls, pmids: list):
         "Return the sub- `set` of all *pmids* that exist in the DB."
         if not len(pmids):
             return set()
@@ -1052,12 +1052,12 @@ class Citation(_Base):
             conn.close()
 
     @classmethod
-    def missing(cls, pmids: list) -> set:
+    def missing(cls, pmids: list):
         "Return the sub- `set` of all *pmids* that do not exist in the DB."
         return set(pmids) - Citation.existing(pmids)
 
     @classmethod
-    def modifiedBefore(cls, pmids: list, before: date) -> set:
+    def modifiedBefore(cls, pmids: list, before: date):
         """
         Return the sub- `set` of all *pmids* that have been `modified`
         *before* a `datetime.date` in the DB.
