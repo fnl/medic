@@ -298,6 +298,9 @@ Fields/Values
 Version History
 ===============
 
+2.1.2
+  - fixed a bug where SQLite did not find the implicit FK->PK reference
+    (thanks to Jason Hennessey for reporting the issue)
 2.1.1
   - added SQLite temporary DB example URL to help output
   - refactored HTML output code
@@ -320,7 +323,8 @@ Version History
   - minor improvements to this manual
   - fixed a bug when inserting/updating from MEDLINE XML files
 2.0.1
-  - fixed a bug that lead to skipping of abstracts (thanks to Chris Roeder for detecting the issue)
+  - fixed a bug that lead to skipping of abstracts
+    (thanks to Chris Roeder for detecting the issue)
 2.0.0
   - added Keywords and PublicationTypes
   - added MEDLINE publication date, volume, issue, and pagination support

@@ -462,6 +462,13 @@ Volume (\fBMedline.issue\fP)
 .SH VERSION HISTORY
 .INDENT 0.0
 .TP
+.B 2.1.2
+.INDENT 7.0
+.IP \(bu 2
+fixed a bug where SQLite did not find the implicit FK\->PK reference
+(thanks to Jason Hennessey for reporting the issue)
+.UNINDENT
+.TP
 .B 2.1.1
 .INDENT 7.0
 .IP \(bu 2
@@ -508,7 +515,8 @@ fixed a bug when inserting/updating from MEDLINE XML files
 .B 2.0.1
 .INDENT 7.0
 .IP \(bu 2
-fixed a bug that lead to skipping of abstracts (thanks to Chris Roeder for detecting the issue)
+fixed a bug that lead to skipping of abstracts
+(thanks to Chris Roeder for detecting the issue)
 .UNINDENT
 .TP
 .B 2.0.0
