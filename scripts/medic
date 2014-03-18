@@ -43,6 +43,7 @@ def Main(command, files_or_pmids, session, unique=True):
 
 
 def WriteTabular(query, output_file: str):
+    """Write `query` results as TSV to file or STDOUT if `output_file` `== '.'`."""
     def prune(string):
         return string.replace('\n', ' ').replace('\t', ' ')
 
@@ -70,6 +71,7 @@ def WriteTabular(query, output_file: str):
 
 
 def WriteHTML(query, output_file: str):
+    """Write `query` results as HTML to file or STDOUT if `output_file` ` == '.'`."""
     from medic.web import FormatHTML
 
     logging.debug("writing to HTML file %s", output_file)
@@ -85,6 +87,7 @@ def WriteHTML(query, output_file: str):
 
 
 def WriteTIAB(query, output_dir: str):
+    """Write `query` results as TIAB plain-text files in `output_dir`."""
     logging.debug("writing TIAB to directory %s", output_dir)
 
     for rec in query:
@@ -105,16 +108,18 @@ def WriteTIAB(query, output_dir: str):
             file.close()
 
 
-def WriteSection(sec, file):
+def WriteSection(section, file):
+    """Write a MEDLINE record's (plain-text) `section` to a `file` handle."""
     print('', file=file)
 
-    if (sec.label is not None):
-        print(sec.label, file=file)
+    if section.label is not None:
+        print(section.label, file=file)
 
-    print(sec.content, file=file)
+    print(section.content, file=file)
 
 
 def WriteMedline(query, output_dir: str):
+    """Write `query` results as MEDLINE plain-text files in `output_dir`."""
     logging.debug("writing MEDLINE to directory %s", output_dir)
 
     for rec in query:
@@ -127,47 +132,48 @@ def WriteMedline(query, output_dir: str):
             file.close()
 
 
-def WriteMedlineRecord(rec, file):
+def WriteMedlineRecord(record, file):
+    """Write a MEDLINE `record` to a `file` handle."""
     def WriteMedlineItem(key: str, value):
         print("{:<4}- {}".format(
             key[:4], str(value).replace('\\', '\\\\').replace('\n', '\\n')
         ), file=file)
 
     addIfExists = lambda val: ' {}'.format(val) if val else ''
-    formatMajor = lambda e: '*{}'.format(e.name) if e.major else e.name
-    medlineDate = lambda d: str(d).replace('-', '')
+    formatMajor = lambda el: '*{}'.format(el.name) if el.major else el.name
+    medlineDate = lambda dt: str(dt).replace('-', '')
     owner = None
-    source = "{}. {}".format(rec.journal, rec.pub_date)
+    source = "{}. {}".format(record.journal, record.pub_date)
 
-    WriteMedlineItem('PMID', rec.pmid)
-    WriteMedlineItem('STAT', rec.status)
-    WriteMedlineItem('DA', medlineDate(rec.created))
+    WriteMedlineItem('PMID', record.pmid)
+    WriteMedlineItem('STAT', record.status)
+    WriteMedlineItem('DA', medlineDate(record.created))
 
-    if rec.revised:
-        WriteMedlineItem('LR', medlineDate(rec.revised))
+    if record.revised:
+        WriteMedlineItem('LR', medlineDate(record.revised))
 
-    if rec.completed:
-        WriteMedlineItem('DCOM', medlineDate(rec.completed))
+    if record.completed:
+        WriteMedlineItem('DCOM', medlineDate(record.completed))
 
-    WriteMedlineItem('TA', rec.journal)
-    WriteMedlineItem('DP', rec.pub_date)
+    WriteMedlineItem('TA', record.journal)
+    WriteMedlineItem('DP', record.pub_date)
 
-    if rec.issue:
-        source += ';' + rec.issue
-        WriteMedlineItem('VI', rec.issue)
+    if record.issue:
+        source += ';' + record.issue
+        WriteMedlineItem('VI', record.issue)
 
-    if rec.pagination:
-        source += ':' + rec.pagination
-        WriteMedlineItem('PG', rec.pagination)
+    if record.pagination:
+        source += ':' + record.pagination
+        WriteMedlineItem('PG', record.pagination)
 
     WriteMedlineItem('SO', source)
 
-    for pub_type in rec.publication_types:
+    for pub_type in record.publication_types:
         WriteMedlineItem('PT', pub_type.value)
 
-    WriteMedlineItem('TI', rec.title)
+    WriteMedlineItem('TI', record.title)
 
-    for author in rec.authors:
+    for author in record.authors:
         if author.initials == '':  # corporate authors
             WriteMedlineItem('CN', author.name)
         else:
@@ -182,8 +188,8 @@ def WriteMedlineRecord(rec, file):
                     addIfExists(author.suffix)
                 ))
 
-    for source in rec.abstracts:
-        abstract = rec.abstracts[source]
+    for source in record.abstracts:
+        abstract = record.abstracts[source]
         text = ' '.join(sec.content for sec in abstract.sections)
 
         if source == 'NLM':
@@ -193,7 +199,7 @@ def WriteMedlineRecord(rec, file):
             WriteMedlineItem('OAB', "{}: {}".format(source, text))
             WriteMedlineItem('OCI', "{} {}".format(source, abstract.copyright))
 
-    for desc in rec.descriptors:
+    for desc in record.descriptors:
         heading = [formatMajor(desc)]
 
         for qual in desc.qualifiers:
@@ -201,23 +207,23 @@ def WriteMedlineRecord(rec, file):
 
         WriteMedlineItem('MH', '/'.join(heading))
 
-    for kwd in rec.keywords:
+    for kwd in record.keywords:
         if kwd.owner != owner:
             WriteMedlineItem('OTO', kwd.owner)
             owner = kwd.owner
 
         WriteMedlineItem('OT', formatMajor(kwd))
 
-    for chem in rec.chemicals:
+    for chem in record.chemicals:
         if chem.uid:
             WriteMedlineItem('RN', '{} ({})'.format(chem.uid, chem.name))
         else:
             WriteMedlineItem('RN', chem.name)
 
-    for xref in rec.databases:
+    for xref in record.databases:
         WriteMedlineItem('SI', '{}/{}'.format(xref.name, xref.accession))
 
-    for ns, uid in rec.identifiers.items():
+    for ns, uid in record.identifiers.items():
         if ns == 'pmc':
             WriteMedlineItem('PMC', uid.value)
         else:
@@ -270,8 +276,8 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--update', action='store_true',
-        help='parsing MEDLINE update files: '
-             'list all updated PMIDs in delete.sql'
+        help='parsing MEDLINE XML files: '
+             'delete all parsed records prior to inserting them'
     )
     parser.add_argument(
         '--pmid-lists', action='store_true',
@@ -311,6 +317,7 @@ if __name__ == '__main__':
         args.pmid_lists = True
 
     def ParseListOrYield(file):
+        """Helper to read PMID lists if `file` indeed is a file."""
         if os.path.isfile(file):
             for line in open(file):
                 yield line.strip()

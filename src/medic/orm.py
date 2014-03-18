@@ -10,7 +10,7 @@ import logging
 from datetime import date
 from sqlalchemy import engine, select, and_, Enum
 from sqlalchemy import event
-from sqlalchemy.engine import RowProxy
+# from sqlalchemy.engine import RowProxy
 from sqlalchemy.engine.url import URL
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relation, session
@@ -55,8 +55,10 @@ def InitDb(*args, **kwds):
         # http://docs.sqlalchemy.org/en/rel_0_8/dialects/sqlite.html#foreign-key-support
         if (isinstance(args[0], str) and args[0].startswith('sqlite')) or \
                 (isinstance(args[0], URL) and args[0].get_dialect() == 'sqlite'):
+            # noinspection PyUnusedLocal
             @event.listens_for(engine.Engine, "connect")
             def set_sqlite_pragma(dbapi_connection, _):
+                """Injection to enable foreign keys in SQLite DBs."""
                 cursor = dbapi_connection.cursor()
                 cursor.execute("PRAGMA foreign_keys=ON")
                 cursor.close()
@@ -78,7 +80,7 @@ def Session(*args, **kwds):
 
 
 def _fetch_first(query):
-    "Given a *query*, fetch the first row and return the first element or ``None``."
+    """Given a *query*, fetch the first row and return the first element or ``None``."""
     conn = _db.engine.connect()
     logger.debug("%s", query)
 
@@ -91,7 +93,7 @@ def _fetch_first(query):
 
 
 def _fetch_all(query):
-    "Given a *query*, fetch and return all rows."
+    """Given a *query*, fetch and return all rows."""
     conn = _db.engine.connect()
     logger.debug("%s", query)
 
@@ -102,6 +104,7 @@ def _fetch_all(query):
         conn.close()
 
 
+# noinspection PyUnresolvedReferences
 class SelectMixin(object):
     """
     Mixin for child tables to select rows (and columns)
@@ -198,13 +201,13 @@ class Identifier(_Base, SelectMixin):
 
     def __eq__(self, other):
         return isinstance(other, Identifier) and \
-               self.pmid == other.pmid and \
-               self.namespace == other.namespace and \
-               self.value == other.value
+            self.pmid == other.pmid and \
+            self.namespace == other.namespace and \
+            self.value == other.value
 
     @classmethod
     def pmid2doi(cls, pmid: int):
-        "Convert a PMID to a DOI (or ``None`` if no mapping is found)."
+        """Convert a PMID to a DOI (or ``None`` if no mapping is found)."""
         c = cls.__table__.c
         query = select(
             [c.value], (c.namespace == 'doi') & (c.pmid == pmid)
@@ -213,7 +216,7 @@ class Identifier(_Base, SelectMixin):
 
     @classmethod
     def doi2pmid(cls, doi: str):
-        "Convert a DOI to a PMID (or ``None`` if no mapping is found)."
+        """Convert a DOI to a PMID (or ``None`` if no mapping is found)."""
         c = cls.__table__.c
         query = select(
             [c.pmid], (c.namespace == 'doi') & (c.value == doi)
@@ -285,7 +288,7 @@ class Author(_Base, SelectMixin):
         suffix
             an author name's suffix *
 
-    * empty string if explicitly non-existant, NULL if unknown
+    * empty string if explicitly non-existent, NULL if unknown
 
     Primary Key: ``(pmid, pos)``
     """
@@ -323,12 +326,12 @@ class Author(_Base, SelectMixin):
 
     def __eq__(self, other):
         return isinstance(other, Author) and \
-               self.pmid == other.pmid and \
-               self.pos == other.pos and \
-               self.name == other.name and \
-               self.initials == other.initials and \
-               self.forename == other.forename and \
-               self.suffix == other.suffix
+            self.pmid == other.pmid and \
+            self.pos == other.pos and \
+            self.name == other.name and \
+            self.initials == other.initials and \
+            self.forename == other.forename and \
+            self.suffix == other.suffix
 
     def fullName(self):
         """
@@ -346,7 +349,7 @@ class Author(_Base, SelectMixin):
         return ' '.join(name)
 
     def shortName(self):
-        "Return the short name of this author (using initials and last)."
+        """Return the short name of this author (using initials and last)."""
         name = []
         if self.initials:
             name.append(self.initials)
@@ -412,11 +415,11 @@ class Qualifier(_Base, SelectMixin):
 
     def __eq__(self, other):
         return isinstance(other, Qualifier) and \
-               self.pmid == other.pmid and \
-               self.num == other.num and \
-               self.sub == other.sub and \
-               self.name == other.name and \
-               self.major == other.major
+            self.pmid == other.pmid and \
+            self.num == other.num and \
+            self.sub == other.sub and \
+            self.name == other.name and \
+            self.major == other.major
 
 
 class Descriptor(_Base, SelectMixin):
@@ -473,10 +476,10 @@ class Descriptor(_Base, SelectMixin):
 
     def __eq__(self, other):
         return isinstance(other, Descriptor) and \
-               self.pmid == other.pmid and \
-               self.num == other.num and \
-               self.name == other.name and \
-               self.major == other.major
+            self.pmid == other.pmid and \
+            self.num == other.num and \
+            self.name == other.name and \
+            self.major == other.major
 
 
 class Chemical(_Base, SelectMixin):
@@ -524,10 +527,10 @@ class Chemical(_Base, SelectMixin):
 
     def __eq__(self, other):
         return isinstance(other, Chemical) and \
-               self.pmid == other.pmid and \
-               self.idx == other.idx and \
-               self.uid == other.uid and \
-               self.name == other.name
+            self.pmid == other.pmid and \
+            self.idx == other.idx and \
+            self.uid == other.uid and \
+            self.name == other.name
 
 
 class PublicationType(_Base, SelectMixin):
@@ -563,8 +566,8 @@ class PublicationType(_Base, SelectMixin):
 
     def __eq__(self, other):
         return isinstance(other, PublicationType) and \
-               self.pmid == other.pmid and \
-               self.value == other.value
+            self.pmid == other.pmid and \
+            self.value == other.value
 
 
 class Database(_Base, SelectMixin):
@@ -607,9 +610,9 @@ class Database(_Base, SelectMixin):
 
     def __eq__(self, other):
         return isinstance(other, Database) and \
-               self.pmid == other.pmid and \
-               self.name == other.name and \
-               self.accession == other.accession
+            self.pmid == other.pmid and \
+            self.name == other.name and \
+            self.accession == other.accession
 
 
 class Keyword(_Base, SelectMixin):
@@ -662,16 +665,16 @@ class Keyword(_Base, SelectMixin):
 
     def __repr__(self):
         return "Keyword<{}:{}:{}>".format(
-                self.pmid, self.owner, self.cnt
+            self.pmid, self.owner, self.cnt
         )
 
     def __eq__(self, other):
         return isinstance(other, Keyword) and \
-               self.pmid == other.pmid and \
-               self.owner == other.owner and \
-               self.cnt == other.cnt and \
-               self.major == other.major and \
-               self.name == other.name
+            self.pmid == other.pmid and \
+            self.owner == other.owner and \
+            self.cnt == other.cnt and \
+            self.major == other.major and \
+            self.name == other.name
 
 
 class Section(_Base, SelectMixin):
@@ -737,12 +740,12 @@ class Section(_Base, SelectMixin):
 
     def __eq__(self, other):
         return isinstance(other, Section) and \
-               self.pmid == other.pmid and \
-               self.source == other.source and \
-               self.seq == other.seq and \
-               self.name == other.name and \
-               self.label == other.label and \
-               self.content == other.content
+            self.pmid == other.pmid and \
+            self.source == other.source and \
+            self.seq == other.seq and \
+            self.name == other.name and \
+            self.label == other.label and \
+            self.content == other.content
 
 
 class Abstract(_Base, SelectMixin):
@@ -752,7 +755,7 @@ class Abstract(_Base, SelectMixin):
     Attributes:
 
         pmid
-            the recor's identifier (PubMed ID)
+            the record's identifier (PubMed ID)
         source
             the abstract's source (see `Abstract.SOURCES`)
         copyright
@@ -773,13 +776,13 @@ class Abstract(_Base, SelectMixin):
         order_by=Section.__table__.c.seq
     )
 
-    def __init__(self, pmid: int, source: str='NLM', copyright: str=None):
+    def __init__(self, pmid: int, source: str='NLM', copy: str=None):
         assert pmid > 0, pmid
         assert source in Abstract.SOURCES
-        assert copyright is None or copyright, repr(copyright)
+        assert copy is None or copy, repr(copy)
         self.pmid = pmid
         self.source = source
-        self.copyright = copyright
+        self.copyright = copy
 
     def __str__(self):
         return '{}\t{}\t{}\n'.format(
@@ -791,9 +794,9 @@ class Abstract(_Base, SelectMixin):
 
     def __eq__(self, other):
         return isinstance(other, Abstract) and \
-               self.pmid == other.pmid and \
-               self.source == other.source and \
-               self.copyright == other.copyright
+            self.pmid == other.pmid and \
+            self.source == other.source and \
+            self.copyright == other.copyright
 
 
 class Citation(_Base):
@@ -925,16 +928,16 @@ class Citation(_Base):
 
     def __eq__(self, other):
         return isinstance(other, Citation) and \
-               self.pmid == other.pmid and \
-               self.status == other.status and \
-               self.title == other.title and \
-               self.journal == other.journal and \
-               self.pub_date == other.pub_date and \
-               self.issue == other.issue and \
-               self.pagination == other.pagination and \
-               self.created == other.created and \
-               self.completed == other.completed and \
-               self.revised == other.revised
+            self.pmid == other.pmid and \
+            self.status == other.status and \
+            self.journal == other.journal and \
+            self.title == other.title and \
+            self.pub_date == other.pub_date and \
+            self.issue == other.issue and \
+            self.pagination == other.pagination and \
+            self.created == other.created and \
+            self.completed == other.completed and \
+            self.revised == other.revised
 
     def citation(self):
         issue = '; {}'.format(self.issue) if self.issue else ""
@@ -1038,7 +1041,7 @@ class Citation(_Base):
 
     @classmethod
     def existing(cls, pmids: list):
-        "Return the sub- `set` of all *pmids* that exist in the DB."
+        """Return the sub- `set` of all *pmids* that exist in the DB."""
         if not len(pmids):
             return set()
 
@@ -1053,7 +1056,7 @@ class Citation(_Base):
 
     @classmethod
     def missing(cls, pmids: list):
-        "Return the sub- `set` of all *pmids* that do not exist in the DB."
+        """Return the sub- `set` of all *pmids* that do not exist in the DB."""
         return set(pmids) - Citation.existing(pmids)
 
     @classmethod

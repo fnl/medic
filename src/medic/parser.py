@@ -119,7 +119,8 @@ class Parser:
             else:
                 logger.debug('ignored %s', element.tag)
 
-    def DeleteCitation(self, element):
+    @staticmethod
+    def DeleteCitation(element):
         for pmid in element.findall('PMID'):
             yield int(pmid.text)
 
@@ -158,7 +159,8 @@ class Parser:
         return Citation(self.pmid, status, title, journal,
                         pub_date, created, **options)
 
-    def parsePubDate(self, element):
+    @staticmethod
+    def parsePubDate(element):
         medline = element.find('MedlineDate')
 
         if medline is not None:
@@ -176,7 +178,8 @@ class Parser:
 
             return ' '.join(datum)
 
-    def parseIssue(self, element):
+    @staticmethod
+    def parseIssue(element):
         if element is not None:
             issue = None
             vol = element.find('Volume')
@@ -193,7 +196,8 @@ class Parser:
 
             return issue
 
-    def parsePagination(self, element):
+    @staticmethod
+    def parsePagination(element):
         if element is not None and element.text:
             return element.text.strip()
 
@@ -229,14 +233,14 @@ class MedlineXMLParser(Parser):
             yield item
 
     def parseAbstract(self, element, source):
-        copyright = element.find('CopyrightInformation')
+        copy = element.find('CopyrightInformation')
 
-        if copyright is not None:
-            text = copyright.text.strip()
-            copyright = text if text else None
+        if copy is not None:
+            text = copy.text.strip()
+            copy = text if text else None
 
         # Note: yield Abstract before the Sections!
-        yield Abstract(self.pmid, source, copyright)
+        yield Abstract(self.pmid, source, copy)
         self.seq = 0
 
         for child in element.getchildren():

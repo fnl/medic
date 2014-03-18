@@ -7,15 +7,17 @@ from unittest import main, TestCase
 from sqlalchemy.exc import IntegrityError, StatementError
 
 from medic.orm import InitDb, Session, Citation, Section, Author, Descriptor, Qualifier, \
-        Database, Identifier, Chemical, Keyword, PublicationType, Abstract
+    Database, Identifier, Chemical, Keyword, PublicationType, Abstract
 
 __author__ = 'Florian Leitner'
 
 URI = "sqlite+pysqlite://"  # use in-memmory SQLite DB for testing
 
+
 def DefaultCitation(pmid=1, status='MEDLINE', title='title',
                     journal='journal', pub_date='published', created=date.today()):
     return Citation(pmid, status, title, journal, pub_date, created)
+
 
 class InitdbTest(TestCase):
     def testUsingURI(self):
@@ -27,6 +29,7 @@ class InitdbTest(TestCase):
         self.assertEqual('sqlite', Session().connection().dialect.name)
 
 
+# noinspection PyUnresolvedReferences
 class TestMixin:
     def assertBadExtraValue(self, error, field, value):
         self.assertRaises(error, self.klass, *self.defaults, **{field: value})
@@ -36,6 +39,7 @@ class TestMixin:
         self.assertRaises(StatementError, self.sess.commit)
 
     def assertBadValue(self, value, error, field):
+        # noinspection PyProtectedMember
         bad_values = self.defaults._replace(**{field: value})
         self.assertRaises(error, self.klass, *bad_values)
         instance = self.klass(*self.defaults)
@@ -65,6 +69,7 @@ class TestMixin:
         self.assertEqual(instance, self.sess.query(self.klass).first())
 
     def assertDifference(self, **values):
+        # noinspection PyProtectedMember
         self.assertNotEqual(self.klass(*self.defaults._replace(**values)),
                             self.klass(*self.defaults))
 
@@ -173,7 +178,7 @@ class CitationTest(TestCase, TestMixin):
         d = date.today()
         r = Citation(1, 'MEDLINE', 'title', 'journal\\.', 'PubDate', d)
         line = "1\tMEDLINE\ttitle\tjournal\\\\.\tPubDate\t\\N\t\\N\t{}\t\\N\t\\N\t{}\n".format(
-                d.isoformat(), d.isoformat()
+            d.isoformat(), d.isoformat()
         )
         self.assertEqual(line, str(r))
 
@@ -245,9 +250,9 @@ class CitationTest(TestCase, TestMixin):
         self.assertEqual(3, count)
 
     def addThree(self, d):
-        self.sess.add(DefaultCitation(1, journal='Journal 1'))
-        self.sess.add(DefaultCitation(2, journal='Journal 2'))
-        self.sess.add(DefaultCitation(3))
+        self.sess.add(DefaultCitation(1, journal='Journal 1', created=d))
+        self.sess.add(DefaultCitation(2, journal='Journal 2', created=d))
+        self.sess.add(DefaultCitation(3, created=d))
         self.sess.commit()
 
     def testSelect(self):

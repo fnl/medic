@@ -24,17 +24,17 @@ logger = logging.getLogger(__name__)
 
 
 def insert(session: Session, files_or_pmids: iter, uniq: bool) -> bool:
-    "Insert all records by parsing the *files* or downloading the *PMIDs*."
+    """Insert all records by parsing the *files* or downloading the *PMIDs*."""
     _add(session, files_or_pmids, lambda i: session.add(i), uniq)
 
 
 def update(session: Session, files_or_pmids: iter, uniq: bool) -> bool:
-    "Update all records in the *files* (paths) or download the *PMIDs*."
+    """Update all records in the *files* (paths) or download the *PMIDs*."""
     _add(session, files_or_pmids, lambda i: session.merge(i), uniq)
 
 
 def select(session: Session, pmids: list([int])) -> iter([Citation]):
-    "Return an iterator over all `Citation` records for a list of *PMIDs*."
+    """Return an iterator over all `Citation` records for a list of *PMIDs*."""
     count = 0
     for record in session.query(Citation).filter(Citation.pmid.in_(pmids)):
         count += 1
@@ -43,7 +43,7 @@ def select(session: Session, pmids: list([int])) -> iter([Citation]):
 
 
 def delete(session: Session, pmids: list([int])) -> bool:
-    "Delete all records for a list of *PMIDs*."
+    """Delete all records for a list of *PMIDs*."""
     count = session.query(Citation).filter(Citation.pmid.in_(pmids)).delete(
         synchronize_session=False
     )
@@ -52,17 +52,17 @@ def delete(session: Session, pmids: list([int])) -> bool:
     return True
 
 
-def dump(files: iter, output_dir: str, unique: bool, update: bool):
+def dump(files: iter, output_dir: str, unique: bool, update_all: bool):
     """
     Parse MEDLINE XML files into tabular flat-files for each DB table.
 
-    In addtion, a ``delete.txt`` file is generated, containing the PMIDs
+    In addition, a ``delete.txt`` file is generated, containing the PMIDs
     that should first be deleted from the DB before copying the dump.
 
     :param files: a list of XML files to parse (optionally, gzipped)
     :param output_dir: path to the output directory for the dump
     :param unique: if ``True`` only VersionId == "1" records are dumped
-    :param update: if ``True`` the PMIDs of all parsed records are
+    :param update_all: if ``True`` the PMIDs of all parsed records are
                    added to the list of PMIDs for deletion
     """
     out_stream = {
@@ -101,7 +101,7 @@ def dump(files: iter, output_dir: str, unique: bool, update: bool):
         else:
             in_stream = open(f)
 
-        count += _dump(in_stream, out_stream, parser, update)
+        count += _dump(in_stream, out_stream, parser, update_all)
 
     for stream in out_stream.values():
         if stream.tell() == 0:
@@ -113,7 +113,7 @@ def dump(files: iter, output_dir: str, unique: bool, update: bool):
     logger.info("parsed %i records", count)
 
 
-def _dump(in_stream, out_stream: dict, parser: Parser, update: bool) -> int:
+def _dump(in_stream, out_stream: dict, parser: Parser, update_all: bool) -> int:
     count = 0
 
     for i in parser.parse(in_stream):
@@ -125,7 +125,7 @@ def _dump(in_stream, out_stream: dict, parser: Parser, update: bool) -> int:
             if i.__tablename__ == Citation.__tablename__:
                 count += 1
 
-                if update:
+                if update_all:
                     print(i.pmid, file=out_stream['delete'])
 
     return count
@@ -194,7 +194,7 @@ def _streamInstances(session: Session, handle, stream: iter) -> int:
 
 
 def _collectCitation(stream: iter) -> iter:
-    "Collect PMIDs or whole citation lists from the stream."
+    """Collect PMIDs or whole citation lists from the stream."""
     citation = []
     pmid = None
 
@@ -218,7 +218,7 @@ def _collectCitation(stream: iter) -> iter:
 
 
 def _handleCitation(handle, instances: list):
-    "Handle a list of instances representing a citation."
+    """Handle a list of instances representing a citation."""
     # handle the Citation object first:
     for idx in range(len(instances) - 1, -1, -1):
         if isinstance(instances[idx], Citation):
@@ -226,7 +226,7 @@ def _handleCitation(handle, instances: list):
             handle(instances.pop(idx))
             break
 
-    # and everythin else after that:
+    # and everything else after that:
     for i in instances:
         handle(i)
 

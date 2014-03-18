@@ -44,7 +44,7 @@ and SQLite, with the latter part of the Python StdLib)::
 
   pip install psycopg2 
 
-Create the PostreSQL database::
+Create the PostgreSQL database::
 
   createdb medline 
 
@@ -54,7 +54,7 @@ SQLite DB file in the URL option (that will implicitly "create" the DB)::
   medic insert --url sqlite:///tmp.db 123456
 
 To create the tables in the DB, you can "try" to fetch a record: As the DB
-is empy, this will not write anything, but SQL Alchemy will create the tables
+is empty, this will not write anything, but SQL Alchemy will create the tables
 for you in the DB::
 
   medic write 123 # for PostgreSQL
@@ -134,7 +134,7 @@ Requirements
 ============
 
 - Python 3.2+
-- SQL Alchewy 0.8+
+- SQL Alchemy 0.8+
 - PostgreSQL 8.4+ or SQLite 3.7+
 
 *Note* that while any DB supported by SQL Alchemy should work, all other DBs
@@ -252,7 +252,7 @@ Entities
 - MedlineCitation and ArticleTitle (``Medline`` and ``Identifier``)
 - Abstract and OtherAbstract (``Abstract`` and ``Section``)
 - Author (``Author``)
-- Chemical (``Chemcial``)
+- Chemical (``Chemical``)
 - DataBank (``Database``)
 - Keyword (``Keyword``)
 - MeshHeading (``Descriptor`` and ``Qualifier``)
@@ -282,7 +282,7 @@ Fields/Values
 - LastName (``Author.name``)
 - MedlineCitation (with *Status* as ``Medline.status``)
 - MedlineTA (``Medline.journal``)
-- NameOfSubstance (``Chemcial.name``)
+- NameOfSubstance (``Chemical.name``)
 - MedlinePgn (``Medline.pagination``)
 - OtherAbstract (with *Type* as ``Abstract.source``)
 - OtherID (``Identifier.value`` iff *Source* is "PMC" with ``Identifier.namespace`` as "pmc")
@@ -350,7 +350,7 @@ Copyright and License
 =====================
 
 License: `GNU GPL v3`_\ .
-Copryright 2012, 2013 Florian Leitner. All rights reserved.
+Copyright 2012, 2013 Florian Leitner. All rights reserved.
 
 .. _GNU GPL v3: http://www.gnu.org/licenses/gpl-3.0.html
 .. _MEDLINE: http://www.nlm.nih.gov/bsd/mms/medlineelements.html

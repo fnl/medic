@@ -8,9 +8,19 @@
 
 import logging
 
-from http.client import HTTPResponse  # function annotation only
+try:
+    # noinspection PyCompatibility,PyUnresolvedReferences
+    from http.client import HTTPResponse  # only used in function annotations
+    # noinspection PyCompatibility,PyUnresolvedReferences
+    from urllib.request import build_opener
+except ImportError:
+    # Python 2.7 compatibility
+    # noinspection PyCompatibility,PyUnresolvedReferences
+    from httplib import HTTPResponse
+    # noinspection PyCompatibility,PyUnresolvedReferences
+    from urllib2 import build_opener
+
 from io import StringIO
-from urllib.request import build_opener
 
 URL_OPENER = build_opener()
 # to avoid having to build a new opener for each request
@@ -18,7 +28,7 @@ URL_OPENER = build_opener()
 logger = logging.getLogger(__name__)
 
 EUTILS_URL = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?' \
-             'tool=libfnl&db=pubmed&retmode=xml&rettype=medline&id='
+             'tool=medic&db=pubmed&retmode=xml&rettype=medline&id='
 """
 The eUtils URL to which requests for MEDLINE XML records can be made.
 Multiple PMIDs may be appended comma-separated to this URL.
@@ -69,7 +79,7 @@ def Download(pmids: list, timeout: int=60) -> HTTPResponse:
     :raises IOError: if the stream from eUtils cannot be opened
     :raises urllib.error.URLError: if the connection to the eUtils URL cannot
         be made
-    :raises socket.timout: if *timeout* seconds have passed before a response
+    :raises socket.timeout: if *timeout* seconds have passed before a response
         arrives
     """
     assert len(pmids) <= 100, 'too many PMIDs'
@@ -120,12 +130,12 @@ function toggleVisibility(pmid, target) {
             pmid, target, title
         )
     )
-    doi = lambda doi: '<a href="{}{}">{}</a>'.format(
-        DATABANK_LINK['DOI'], doi, doi
+    doi = lambda val: '<a href="{}{}">{}</a>'.format(
+        DATABANK_LINK['DOI'], val, val
     )
     pmc = (
-        lambda pmc:
-        '<a href="{}{}">{}</a>'.format(DATABANK_LINK['PMC'], pmc, pmc)
+        lambda val:
+        '<a href="{}{}">{}</a>'.format(DATABANK_LINK['PMC'], val, val)
     )
     # dates = lambda rec: 'created: {}{}{}'.format(
     #     rec.created,

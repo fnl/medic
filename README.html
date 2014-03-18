@@ -378,7 +378,7 @@ and SQLite, with the latter part of the Python StdLib):</p>
 <pre class="literal-block">
 pip install psycopg2
 </pre>
-<p>Create the PostreSQL database:</p>
+<p>Create the PostgreSQL database:</p>
 <pre class="literal-block">
 createdb medline
 </pre>
@@ -388,7 +388,7 @@ SQLite DB file in the URL option (that will implicitly &quot;create&quot; the DB
 medic insert --url sqlite:///tmp.db 123456
 </pre>
 <p>To create the tables in the DB, you can &quot;try&quot; to fetch a record: As the DB
-is empy, this will not write anything, but SQL Alchemy will create the tables
+is empty, this will not write anything, but SQL Alchemy will create the tables
 for you in the DB:</p>
 <pre class="literal-block">
 medic write 123 # for PostgreSQL
@@ -466,7 +466,7 @@ GNU-zipped files and the &quot;.gz&quot; suffix must be present.</p>
 <h1>Requirements</h1>
 <ul class="simple">
 <li>Python 3.2+</li>
-<li>SQL Alchewy 0.8+</li>
+<li>SQL Alchemy 0.8+</li>
 <li>PostgreSQL 8.4+ or SQLite 3.7+</li>
 </ul>
 <p><em>Note</em> that while any DB supported by SQL Alchemy should work, all other DBs
@@ -570,7 +570,7 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),</dd>
 <li>MedlineCitation and ArticleTitle (<tt class="docutils literal">Medline</tt> and <tt class="docutils literal">Identifier</tt>)</li>
 <li>Abstract and OtherAbstract (<tt class="docutils literal">Abstract</tt> and <tt class="docutils literal">Section</tt>)</li>
 <li>Author (<tt class="docutils literal">Author</tt>)</li>
-<li>Chemical (<tt class="docutils literal">Chemcial</tt>)</li>
+<li>Chemical (<tt class="docutils literal">Chemical</tt>)</li>
 <li>DataBank (<tt class="docutils literal">Database</tt>)</li>
 <li>Keyword (<tt class="docutils literal">Keyword</tt>)</li>
 <li>MeshHeading (<tt class="docutils literal">Descriptor</tt> and <tt class="docutils literal">Qualifier</tt>)</li>
@@ -601,7 +601,7 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),</dd>
 <li>LastName (<tt class="docutils literal">Author.name</tt>)</li>
 <li>MedlineCitation (with <em>Status</em> as <tt class="docutils literal">Medline.status</tt>)</li>
 <li>MedlineTA (<tt class="docutils literal">Medline.journal</tt>)</li>
-<li>NameOfSubstance (<tt class="docutils literal">Chemcial.name</tt>)</li>
+<li>NameOfSubstance (<tt class="docutils literal">Chemical.name</tt>)</li>
 <li>MedlinePgn (<tt class="docutils literal">Medline.pagination</tt>)</li>
 <li>OtherAbstract (with <em>Type</em> as <tt class="docutils literal">Abstract.source</tt>)</li>
 <li>OtherID (<tt class="docutils literal">Identifier.value</tt> iff <em>Source</em> is &quot;PMC&quot; with <tt class="docutils literal">Identifier.namespace</tt> as &quot;pmc&quot;)</li>
@@ -704,7 +704,7 @@ the value of the OtherAbstract Type attribute for other abstracts)</li>
 <div class="section" id="copyright-and-license">
 <h1>Copyright and License</h1>
 <p>License: <a class="reference external" href="http://www.gnu.org/licenses/gpl-3.0.html">GNU GPL v3</a>.
-Copryright 2012, 2013 Florian Leitner. All rights reserved.</p>
+Copyright 2012, 2013 Florian Leitner. All rights reserved.</p>
 </div>
 </div>
 </body>

@@ -6,11 +6,11 @@ from io import StringIO
 from tempfile import TemporaryFile
 
 from medic.orm import Citation, Section, Author, Descriptor, Qualifier, Database, Identifier, \
-        Chemical, Keyword, PublicationType, Abstract
+    Chemical, Keyword, PublicationType, Abstract
 from medic.crud import _dump
 
 DATA = [
-    Abstract(1, 'NLM', None),
+    Abstract(1, 'NLM'),
     Section(1, 'NLM', 1, 'Abstract', 'The Abstract 1'),
     Section(1, 'NLM', 2, 'Abstract', 'The Abstract 2'),
     Descriptor(1, 1, 'd_name', True),
