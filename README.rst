@@ -298,6 +298,10 @@ Fields/Values
 Version History
 ===============
 
+2.1.3
+  - Jason Hennessey changed the (absolute) path of medic's man-page, set to
+    ``/usr/local/share/man`` in the setup script, to a relative location
+    (``share/man``) to avoid issues when installing medic in a virtualenv
 2.1.2
   - fixed a bug where SQLite did not find the implicit FK->PK reference
     (thanks to Jason Hennessey for reporting the issue)
