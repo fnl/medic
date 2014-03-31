@@ -354,7 +354,7 @@ Copyright and License
 =====================
 
 License: `GNU GPL v3`_\ .
-Copyright 2012, 2013 Florian Leitner. All rights reserved.
+Copyright 2012-2014 Florian Leitner. All rights reserved.
 
 .. _GNU GPL v3: http://www.gnu.org/licenses/gpl-3.0.html
 .. _MEDLINE: http://www.nlm.nih.gov/bsd/mms/medlineelements.html
