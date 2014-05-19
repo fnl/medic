@@ -12,6 +12,10 @@ updating and/or deleting the records, and
 writing the contents of selected PMIDs into flat-files.
 
 .. image:: https://zenodo.org/badge/4016/fnl/medic.png
+   :target: https://zenodo.org/record/9968
+   :alt: DOI:10.5281/zendo.9968
+
+DOI:10.5281/zendo.9968
 
 Synopsis
 ========
