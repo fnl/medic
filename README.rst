@@ -11,6 +11,8 @@ bootstrapping a local MEDLINE/PubMed database,
 updating and/or deleting the records, and
 writing the contents of selected PMIDs into flat-files.
 
+.. image:: https://zenodo.org/badge/4016/fnl/medic.png
+
 Synopsis
 ========
 
