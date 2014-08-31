@@ -104,20 +104,24 @@ class Parser:
             if element.tag == 'MedlineCitation':
                 self.undefined()
         elif hasattr(self, element.tag):
-            logger.debug('processing %s', element.tag)
-            instance = getattr(self, element.tag)(element)
+            for i in self.yieldFromGenerator(element):
+                yield i
 
-            if instance is not None:
-                logger.debug('parsed %s', element.tag)
+    def yieldFromGenerator(self, element):
+        logger.debug('processing %s', element.tag)
+        instance = getattr(self, element.tag)(element)
 
-                if isinstance(instance, types.GeneratorType):
-                    for i in instance:
-                        if i is not None:
-                            yield i
-                else:
-                    yield instance
+        if instance is not None:
+            logger.debug('parsed %s', element.tag)
+
+            if isinstance(instance, types.GeneratorType):
+                for i in instance:
+                    if i is not None:
+                        yield i
             else:
-                logger.debug('ignored %s', element.tag)
+                yield instance
+        else:
+            logger.debug('ignored %s', element.tag)
 
     @staticmethod
     def DeleteCitation(element):
@@ -347,11 +351,14 @@ class MedlineXMLParser(Parser):
         logger.debug('KeywordList Owner="%s"', owner)
 
         for cnt, keyword in enumerate(element.getchildren()):
-            if keyword.text is not None and keyword.text.strip():
-                yield Keyword(
-                    self.pmid, owner, cnt + 1, keyword.text.strip(),
-                    keyword.get('MajorTopicYN', 'N') == 'Y',
-                )
+            if keyword.text is not None:
+                text = keyword.text.strip()
+
+                if text:
+                    yield Keyword(
+                        self.pmid, owner, cnt + 1, text,
+                        keyword.get('MajorTopicYN', 'N') == 'Y',
+                    )
 
     def MedlineCitation(self, element):
         instance = Parser.MedlineCitation(self, element)
