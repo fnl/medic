@@ -347,7 +347,7 @@ class MedlineXMLParser(Parser):
         logger.debug('KeywordList Owner="%s"', owner)
 
         for cnt, keyword in enumerate(element.getchildren()):
-            if keyword.text is not None:
+            if keyword.text is not None and keyword.text.strip():
                 yield Keyword(
                     self.pmid, owner, cnt + 1, keyword.text.strip(),
                     keyword.get('MajorTopicYN', 'N') == 'Y',
