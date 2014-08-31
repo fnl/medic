@@ -304,6 +304,13 @@ Fields/Values
 Version History
 ===============
 
+2.1.4
+  - A MEDLINE issue found by Jason: PMID 24073073 has an empty keyword and keyword
+    list that should not be there; Medic prevents adding improper data to the DB
+    by raising an AssertionError.
+    To deal with such cases, medic now ensures each keyword is non-empty before
+    attempting to generate a database entry and drops empty (i.e., whitespace-only)
+    keyword data.
 2.1.3
   - Jason Hennessey changed the (absolute) path of medic's man-page, set to
     ``/usr/local/share/man`` in the setup script, to a relative location

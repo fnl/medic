@@ -466,6 +466,17 @@ Volume (\fBMedline.issue\fP)
 .SH VERSION HISTORY
 .INDENT 0.0
 .TP
+.B 2.1.4
+.INDENT 7.0
+.IP \(bu 2
+A MEDLINE issue found by Jason: PMID 24073073 has an empty keyword and keyword
+list that should not be there; Medic prevents adding improper data to the DB
+by raising an AssertionError.
+To deal with such cases, medic now ensures each keyword is non\-empty before
+attempting to generate a database entry and drops empty (i.e., whitespace\-only)
+keyword data.
+.UNINDENT
+.TP
 .B 2.1.3
 .INDENT 7.0
 .IP \(bu 2
