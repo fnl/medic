@@ -58,9 +58,11 @@ def InitDb(*args, **kwds):
             # noinspection PyUnusedLocal
             @event.listens_for(engine.Engine, "connect")
             def set_sqlite_pragma(dbapi_connection, _):
-                """Injection to enable foreign keys in SQLite DBs."""
+                """Injection to enable foreign keys and make SQLite a bit faster."""
                 cursor = dbapi_connection.cursor()
                 cursor.execute("PRAGMA foreign_keys=ON")
+                cursor.execute("PRAGMA synchronous=OFF")
+                cursor.execute("PRAGMA page_size=65536")
                 cursor.close()
 
     _db = engine.create_engine(*args, **kwds)
