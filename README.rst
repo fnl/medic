@@ -304,7 +304,7 @@ Fields/Values
 Version History
 ===============
 
-dev
+2.1.5
   - Added page_size=MAX and synchronous=OFF pragmas for SQLite DBs (hat-tip to Jason)
 2.1.4
   - A MEDLINE issue found by Jason: PMID 24073073 has an empty keyword and keyword
