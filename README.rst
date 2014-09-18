@@ -304,6 +304,8 @@ Fields/Values
 Version History
 ===============
 
+def
+  - Replaced distutils with setuptools in ``setup.py``.
 2.1.5
   - Added page_size=MAX and synchronous=OFF pragmas for SQLite DBs (hat-tip to Jason)
 2.1.4
