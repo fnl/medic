@@ -20,7 +20,7 @@ import sys
 from sqlalchemy.exc import OperationalError
 
 __author__ = 'Florian Leitner'
-__version__ = '2.1.4'
+__version__ = '2.1.5'
 
 
 def Main(command, files_or_pmids, session, unique=True):
