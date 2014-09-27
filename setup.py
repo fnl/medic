@@ -1,4 +1,4 @@
-from setuptools import setup
+from distutils.core import setup
 
 try:
     with open('README.rst') as file:
