@@ -272,7 +272,7 @@ Fields/Values
 - AbstractText (``Section.name`` "Abstract" or the *NlmCategory*, ``Section.content`` with *Label* as ``Section.label``)
 - AccessionNumber (``Database.accession``)
 - ArticleId (``Identifier.value`` with *IdType* as ``Identifier.namesapce``; only available in online PubMed XML)
-- ArticleTitle (``Citation.title``)
+- ArticleTitle (``Citation.title`` if not empty (alt.: VernacularTitle or "UNKNOWN")
 - CollectiveName (``Author.name``)
 - CopyrightInformation (``Abstract.copyright``)
 - DataBankName (``Database.name``)
@@ -298,12 +298,15 @@ Fields/Values
 - QualifierName (``Qualifier.name`` with *MajorTopicYN* as ``Qualifier.major``)
 - RegistryNumber (``Chemical.uid``)
 - Suffix (``Author.suffix``)
-- VernacularTitle (``Section.name`` "Vernacular", ``Section.content``)
+- VernacularTitle (``Citation.title`` if AbstractTitle is empty)
 - Volume (``Citation.issue``)
 
 Version History
 ===============
 
+2.1.7
+  - Work-around for the limit of SQLite that only lets you use 999 variables per query.
+  - Corrected the outdated VernacularTitle documentation in this document.
 2.1.6
   - Work-around for parsing citations that have an empty ArticleTitle element (which they
     shouldn't, according to the DTD): Either use the VernacularTitle (e.g., PMID 22536004), or

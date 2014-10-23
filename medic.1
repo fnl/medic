@@ -407,7 +407,7 @@ AccessionNumber (\fBDatabase.accession\fP)
 .IP \(bu 2
 ArticleId (\fBIdentifier.value\fP with \fIIdType\fP as \fBIdentifier.namesapce\fP; only available in online PubMed XML)
 .IP \(bu 2
-ArticleTitle (\fBCitation.title\fP)
+ArticleTitle (\fBCitation.title\fP if not empty (alt.: VernacularTitle or "UNKNOWN")
 .IP \(bu 2
 CollectiveName (\fBAuthor.name\fP)
 .IP \(bu 2
@@ -459,12 +459,20 @@ RegistryNumber (\fBChemical.uid\fP)
 .IP \(bu 2
 Suffix (\fBAuthor.suffix\fP)
 .IP \(bu 2
-VernacularTitle (\fBSection.name\fP "Vernacular", \fBSection.content\fP)
+VernacularTitle (\fBCitation.title\fP if AbstractTitle is empty)
 .IP \(bu 2
 Volume (\fBCitation.issue\fP)
 .UNINDENT
 .SH VERSION HISTORY
 .INDENT 0.0
+.TP
+.B 2.1.7
+.INDENT 7.0
+.IP \(bu 2
+Work\-around for the limit of SQLite that only lets you use 999 variables per query.
+.IP \(bu 2
+Corrected the outdated VernacularTitle documentation in this document.
+.UNINDENT
 .TP
 .B 2.1.6
 .INDENT 7.0

@@ -587,7 +587,7 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),</dd>
 <li>AbstractText (<tt class="docutils literal">Section.name</tt> &quot;Abstract&quot; or the <em>NlmCategory</em>, <tt class="docutils literal">Section.content</tt> with <em>Label</em> as <tt class="docutils literal">Section.label</tt>)</li>
 <li>AccessionNumber (<tt class="docutils literal">Database.accession</tt>)</li>
 <li>ArticleId (<tt class="docutils literal">Identifier.value</tt> with <em>IdType</em> as <tt class="docutils literal">Identifier.namesapce</tt>; only available in online PubMed XML)</li>
-<li>ArticleTitle (<tt class="docutils literal">Citation.title</tt>)</li>
+<li>ArticleTitle (<tt class="docutils literal">Citation.title</tt> if not empty (alt.: VernacularTitle or &quot;UNKNOWN&quot;)</li>
 <li>CollectiveName (<tt class="docutils literal">Author.name</tt>)</li>
 <li>CopyrightInformation (<tt class="docutils literal">Abstract.copyright</tt>)</li>
 <li>DataBankName (<tt class="docutils literal">Database.name</tt>)</li>
@@ -613,7 +613,7 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),</dd>
 <li>QualifierName (<tt class="docutils literal">Qualifier.name</tt> with <em>MajorTopicYN</em> as <tt class="docutils literal">Qualifier.major</tt>)</li>
 <li>RegistryNumber (<tt class="docutils literal">Chemical.uid</tt>)</li>
 <li>Suffix (<tt class="docutils literal">Author.suffix</tt>)</li>
-<li>VernacularTitle (<tt class="docutils literal">Section.name</tt> &quot;Vernacular&quot;, <tt class="docutils literal">Section.content</tt>)</li>
+<li>VernacularTitle (<tt class="docutils literal">Citation.title</tt> if AbstractTitle is empty)</li>
 <li>Volume (<tt class="docutils literal">Citation.issue</tt>)</li>
 </ul>
 </div>
@@ -621,6 +621,12 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),</dd>
 <div class="section" id="version-history">
 <h1>Version History</h1>
 <dl class="docutils">
+<dt>2.1.7</dt>
+<dd><ul class="first last simple">
+<li>Work-around for the limit of SQLite that only lets you use 999 variables per query.</li>
+<li>Corrected the outdated VernacularTitle documentation in this document.</li>
+</ul>
+</dd>
 <dt>2.1.6</dt>
 <dd><ul class="first last simple">
 <li>Work-around for parsing citations that have an empty ArticleTitle element (which they
