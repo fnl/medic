@@ -8,7 +8,7 @@ except IOError:
 
 setup(
     name='medic',
-    version='2.1.6',
+    version='2.1.7',
     license='GNU GPL v3',
     author='Florian Leitner',
     author_email='florian.leitner@gmail.com',
