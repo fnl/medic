@@ -22,6 +22,9 @@ from medic.web import Download
 
 logger = logging.getLogger(__name__)
 
+QUERY_LIMIT = 999
+"Maximum number of parameters that can be in an SQLite query; default is 999."
+
 
 def insert(session: Session, files_or_pmids: iter, uniq: bool) -> bool:
     """Insert all records by parsing the *files* or downloading the *PMIDs*."""
@@ -36,9 +39,18 @@ def update(session: Session, files_or_pmids: iter, uniq: bool) -> bool:
 def select(session: Session, pmids: list([int])) -> iter([Citation]):
     """Return an iterator over all `Citation` records for a list of *PMIDs*."""
     count = 0
-    for record in session.query(Citation).filter(Citation.pmid.in_(pmids)):
-        count += 1
-        yield record
+    offset = 0
+    total = len(pmids)
+
+    while offset < total:
+        for record in session.query(Citation).filter(
+                Citation.pmid.in_(pmids[offset:offset + QUERY_LIMIT])
+        ):
+            count += 1
+            yield record
+
+        offset += QUERY_LIMIT
+
     logger.info("retrieved %i records", count)
 
 
