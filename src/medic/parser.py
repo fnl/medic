@@ -104,8 +104,12 @@ class Parser:
             if element.tag == 'MedlineCitation':
                 self.undefined()
         elif hasattr(self, element.tag):
-            for i in self.yieldFromGenerator(element):
-                yield i
+            try:
+                for i in self.yieldFromGenerator(element):
+                    yield i
+            except Exception:
+                logger.critical('error while parsing PMID %d', self.pmid)
+                raise
 
     def yieldFromGenerator(self, element):
         logger.debug('processing %s', element.tag)
@@ -146,7 +150,20 @@ class Parser:
             'MedlineTA'
         ).text.strip()
         article = element.find('Article')
-        title = article.find('ArticleTitle').text.strip()
+        title = article.find('ArticleTitle').text
+
+        # ArticleTitle element tags should never be empty when in fact they are sometimes,
+        # in violation of the MEDLINE DTD; For example, while PMID 22536004 has a
+        # VernacularTitle, its ArticleTitle element is empty.
+        if title is None and article.find('VernacularTitle') is not None:
+            logging.info('PMID %d had no ArticleTitle; using VernacularTitle instead' % self.pmid)
+            title = article.find('VernacularTitle').text
+
+        if title is None:
+            logging.warning('could not find any title for PMID %d' % self.pmid)
+            title = 'UNKNOWN'  # NB: a DB constraint ensures titles are never empty!
+
+        title = title.strip()
         pub_date = self.parsePubDate(
             article.find('Journal/JournalIssue/PubDate')
         )

@@ -539,25 +539,25 @@ process other versions of a citation, use the option <tt class="docutils literal
 <dt>Abstract (abstracts)</dt>
 <dd><strong>pmid</strong>:FK(Citation), <strong>source</strong>:ENUM(type), copyright:TEXT</dd>
 <dt>Section (sections)</dt>
-<dd><strong>pmid</strong>:FK(Medline), <strong>source</strong>:ENUM(type), <strong>seq</strong>:SMALLINT,
+<dd><strong>pmid</strong>:FK(Citation), <strong>source</strong>:ENUM(type), <strong>seq</strong>:SMALLINT,
 <em>name</em>:ENUM(section), label:VARCHAR(256), <em>content</em>:TEXT</dd>
 <dt>Author (authors)</dt>
-<dd><strong>pmid</strong>:FK(Medline), <strong>pos</strong>:SMALLINT, <em>name</em>:TEXT,
+<dd><strong>pmid</strong>:FK(Citation), <strong>pos</strong>:SMALLINT, <em>name</em>:TEXT,
 initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),</dd>
 <dt>PublicationType (publication_types)</dt>
-<dd><strong>pmid</strong>:FK(Medline), <strong>value</strong>:VARCHAR(256)</dd>
+<dd><strong>pmid</strong>:FK(Citation), <strong>value</strong>:VARCHAR(256)</dd>
 <dt>Descriptor (descriptors)</dt>
-<dd><strong>pmid</strong>:FK(Medline), <strong>num</strong>:SMALLINT, major:BOOL, <em>name</em>:TEXT</dd>
+<dd><strong>pmid</strong>:FK(Citation), <strong>num</strong>:SMALLINT, major:BOOL, <em>name</em>:TEXT</dd>
 <dt>Qualifier (qualifiers)</dt>
 <dd><strong>pmid</strong>:FK(Descriptor), <strong>num</strong>:FK(Descriptor), <strong>sub</strong>:SMALLINT, major:BOOL, <em>name</em>:TEXT</dd>
 <dt>Identifier (identifiers)</dt>
-<dd><strong>pmid</strong>:FK(Medline), <strong>namespace</strong>:VARCHAR(32), <em>value</em>:VARCHAR(256)</dd>
+<dd><strong>pmid</strong>:FK(Citation), <strong>namespace</strong>:VARCHAR(32), <em>value</em>:VARCHAR(256)</dd>
 <dt>Database (databases)</dt>
-<dd><strong>pmid</strong>:FK(Medline), <strong>name</strong>:VARCHAR(32), <strong>accession</strong>:VARCHAR(256)</dd>
+<dd><strong>pmid</strong>:FK(Citation), <strong>name</strong>:VARCHAR(32), <strong>accession</strong>:VARCHAR(256)</dd>
 <dt>Chemical (chemicals)</dt>
-<dd><strong>pmid</strong>:FK(Medline), <strong>idx</strong>:VARCHAR(32), uid:VARCHAR(256), <em>name</em>:VARCHAR(256)</dd>
+<dd><strong>pmid</strong>:FK(Citation), <strong>idx</strong>:VARCHAR(32), uid:VARCHAR(256), <em>name</em>:VARCHAR(256)</dd>
 <dt>Keyword (keywords)</dt>
-<dd><strong>pmid</strong>:FK(Medline), <strong>owner</strong>:ENUM(owner), <strong>cnt</strong>:SMALLINT, major:BOOL, <em>value</em>:TEXT</dd>
+<dd><strong>pmid</strong>:FK(Citation), <strong>owner</strong>:ENUM(owner), <strong>cnt</strong>:SMALLINT, major:BOOL, <em>value</em>:TEXT</dd>
 </dl>
 <ul class="simple">
 <li><strong>bold</strong> (Composite) Primary Key</li>
@@ -569,7 +569,7 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),</dd>
 <div class="section" id="entities">
 <h2>Entities</h2>
 <ul class="simple">
-<li>MedlineCitation and ArticleTitle (<tt class="docutils literal">Medline</tt> and <tt class="docutils literal">Identifier</tt>)</li>
+<li>MedlineCitation and ArticleTitle (<tt class="docutils literal">Citation</tt> and <tt class="docutils literal">Identifier</tt>)</li>
 <li>Abstract and OtherAbstract (<tt class="docutils literal">Abstract</tt> and <tt class="docutils literal">Section</tt>)</li>
 <li>Author (<tt class="docutils literal">Author</tt>)</li>
 <li>Chemical (<tt class="docutils literal">Chemical</tt>)</li>
@@ -591,36 +591,47 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),</dd>
 <li>CollectiveName (<tt class="docutils literal">Author.name</tt>)</li>
 <li>CopyrightInformation (<tt class="docutils literal">Abstract.copyright</tt>)</li>
 <li>DataBankName (<tt class="docutils literal">Database.name</tt>)</li>
-<li>DateCompleted (<tt class="docutils literal">Medline.completed</tt>)</li>
-<li>DateCreated (<tt class="docutils literal">Medline.created</tt>)</li>
-<li>DateRevised (<tt class="docutils literal">Medline.revised</tt>)</li>
+<li>DateCompleted (<tt class="docutils literal">Citation.completed</tt>)</li>
+<li>DateCreated (<tt class="docutils literal">Citation.created</tt>)</li>
+<li>DateRevised (<tt class="docutils literal">Citation.revised</tt>)</li>
 <li>DescriptorName (<tt class="docutils literal">Descriptor.name</tt> with <em>MajorTopicYN</em> as <tt class="docutils literal">Descriptor.major</tt>)</li>
 <li>ELocationID (<tt class="docutils literal">Identifier.value</tt> with <em>EIdType</em> as <tt class="docutils literal">Identifier.namespace</tt>)</li>
 <li>ForeName (<tt class="docutils literal">Author.forename</tt>)</li>
 <li>Initials (<tt class="docutils literal">Author.initials</tt>)</li>
-<li>Issue (<tt class="docutils literal">Medline.issue</tt>)</li>
+<li>Issue (<tt class="docutils literal">Citation.issue</tt>)</li>
 <li>Keyword (<tt class="docutils literal">Keyword.value</tt> with <em>Owner</em> as <tt class="docutils literal">Keyword.owner</tt> and <em>MajorTopicYN</em> as <tt class="docutils literal">Keyword.major</tt>)</li>
 <li>LastName (<tt class="docutils literal">Author.name</tt>)</li>
-<li>MedlineCitation (with <em>Status</em> as <tt class="docutils literal">Medline.status</tt>)</li>
-<li>MedlineTA (<tt class="docutils literal">Medline.journal</tt>)</li>
+<li>MedlineCitation (with <em>Status</em> as <tt class="docutils literal">Citation.status</tt>)</li>
+<li>MedlineTA (<tt class="docutils literal">Citation.journal</tt>)</li>
 <li>NameOfSubstance (<tt class="docutils literal">Chemical.name</tt>)</li>
-<li>MedlinePgn (<tt class="docutils literal">Medline.pagination</tt>)</li>
+<li>MedlinePgn (<tt class="docutils literal">Citation.pagination</tt>)</li>
 <li>OtherAbstract (with <em>Type</em> as <tt class="docutils literal">Abstract.source</tt>)</li>
 <li>OtherID (<tt class="docutils literal">Identifier.value</tt> iff <em>Source</em> is &quot;PMC&quot; with <tt class="docutils literal">Identifier.namespace</tt> as &quot;pmc&quot;)</li>
-<li>PMID (<tt class="docutils literal">Medline.pmid</tt>)</li>
-<li>PubDate (<tt class="docutils literal">Medline.pub_date</tt>)</li>
+<li>PMID (<tt class="docutils literal">Citation.pmid</tt>)</li>
+<li>PubDate (<tt class="docutils literal">Citation.pub_date</tt>)</li>
 <li>PublicationType (<tt class="docutils literal">PublicationType.value</tt>)</li>
 <li>QualifierName (<tt class="docutils literal">Qualifier.name</tt> with <em>MajorTopicYN</em> as <tt class="docutils literal">Qualifier.major</tt>)</li>
 <li>RegistryNumber (<tt class="docutils literal">Chemical.uid</tt>)</li>
 <li>Suffix (<tt class="docutils literal">Author.suffix</tt>)</li>
 <li>VernacularTitle (<tt class="docutils literal">Section.name</tt> &quot;Vernacular&quot;, <tt class="docutils literal">Section.content</tt>)</li>
-<li>Volume (<tt class="docutils literal">Medline.issue</tt>)</li>
+<li>Volume (<tt class="docutils literal">Citation.issue</tt>)</li>
 </ul>
 </div>
 </div>
 <div class="section" id="version-history">
 <h1>Version History</h1>
 <dl class="docutils">
+<dt>2.1.6</dt>
+<dd><ul class="first last simple">
+<li>Work-around for parsing citations that have an empty ArticleTitle element (which they
+shouldn't, according to the DTD): Either use the VernacularTitle (e.g., PMID 22536004), or
+otherwise set the title to &quot;UNKNOWN&quot; (the empty string is not a valid title) and log a
+warning.</li>
+<li>Work-around for non-unique PublicationType entries (e.g., PMID 10500000): drop non-unique
+PublicationTypes (with the same PMID and value).</li>
+<li>Corrected left-over &quot;Medline&quot; entity names in this document to &quot;Citation&quot;.</li>
+</ul>
+</dd>
 <dt>2.1.5</dt>
 <dd><ul class="first last simple">
 <li>Added page_size=MAX and synchronous=OFF pragmas for SQLite DBs (hat-tip to Jason)</li>

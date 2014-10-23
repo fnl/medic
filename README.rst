@@ -218,33 +218,33 @@ Abstract (abstracts)
   **pmid**:FK(Citation), **source**:ENUM(type), copyright:TEXT
 
 Section (sections)
-  **pmid**:FK(Medline), **source**:ENUM(type), **seq**:SMALLINT,
+  **pmid**:FK(Citation), **source**:ENUM(type), **seq**:SMALLINT,
   *name*:ENUM(section), label:VARCHAR(256), *content*:TEXT
 
 Author (authors)
-  **pmid**:FK(Medline), **pos**:SMALLINT, *name*:TEXT,
+  **pmid**:FK(Citation), **pos**:SMALLINT, *name*:TEXT,
   initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),
 
 PublicationType (publication_types)
-  **pmid**:FK(Medline), **value**:VARCHAR(256)
+  **pmid**:FK(Citation), **value**:VARCHAR(256)
 
 Descriptor (descriptors)
-  **pmid**:FK(Medline), **num**:SMALLINT, major:BOOL, *name*:TEXT
+  **pmid**:FK(Citation), **num**:SMALLINT, major:BOOL, *name*:TEXT
 
 Qualifier (qualifiers)
   **pmid**:FK(Descriptor), **num**:FK(Descriptor), **sub**:SMALLINT, major:BOOL, *name*:TEXT
 
 Identifier (identifiers)
-  **pmid**:FK(Medline), **namespace**:VARCHAR(32), *value*:VARCHAR(256)
+  **pmid**:FK(Citation), **namespace**:VARCHAR(32), *value*:VARCHAR(256)
 
 Database (databases)
-  **pmid**:FK(Medline), **name**:VARCHAR(32), **accession**:VARCHAR(256)
+  **pmid**:FK(Citation), **name**:VARCHAR(32), **accession**:VARCHAR(256)
 
 Chemical (chemicals)
-  **pmid**:FK(Medline), **idx**:VARCHAR(32), uid:VARCHAR(256), *name*:VARCHAR(256)
+  **pmid**:FK(Citation), **idx**:VARCHAR(32), uid:VARCHAR(256), *name*:VARCHAR(256)
 
 Keyword (keywords)
-  **pmid**:FK(Medline), **owner**:ENUM(owner), **cnt**:SMALLINT, major:BOOL, *value*:TEXT
+  **pmid**:FK(Citation), **owner**:ENUM(owner), **cnt**:SMALLINT, major:BOOL, *value*:TEXT
 
 - **bold** (Composite) Primary Key
 - *italic* NOT NULL (Strings that may not be NULL are also never empty.)
@@ -255,7 +255,7 @@ Supported XML Elements
 Entities
 --------
 
-- MedlineCitation and ArticleTitle (``Medline`` and ``Identifier``)
+- MedlineCitation and ArticleTitle (``Citation`` and ``Identifier``)
 - Abstract and OtherAbstract (``Abstract`` and ``Section``)
 - Author (``Author``)
 - Chemical (``Chemical``)
@@ -276,34 +276,42 @@ Fields/Values
 - CollectiveName (``Author.name``)
 - CopyrightInformation (``Abstract.copyright``)
 - DataBankName (``Database.name``)
-- DateCompleted (``Medline.completed``)
-- DateCreated (``Medline.created``)
-- DateRevised (``Medline.revised``)
+- DateCompleted (``Citation.completed``)
+- DateCreated (``Citation.created``)
+- DateRevised (``Citation.revised``)
 - DescriptorName (``Descriptor.name`` with *MajorTopicYN* as ``Descriptor.major``)
 - ELocationID (``Identifier.value`` with *EIdType* as ``Identifier.namespace``)
 - ForeName (``Author.forename``)
 - Initials (``Author.initials``)
-- Issue (``Medline.issue``)
+- Issue (``Citation.issue``)
 - Keyword (``Keyword.value`` with *Owner* as ``Keyword.owner`` and *MajorTopicYN* as ``Keyword.major``)
 - LastName (``Author.name``)
-- MedlineCitation (with *Status* as ``Medline.status``)
-- MedlineTA (``Medline.journal``)
+- MedlineCitation (with *Status* as ``Citation.status``)
+- MedlineTA (``Citation.journal``)
 - NameOfSubstance (``Chemical.name``)
-- MedlinePgn (``Medline.pagination``)
+- MedlinePgn (``Citation.pagination``)
 - OtherAbstract (with *Type* as ``Abstract.source``)
 - OtherID (``Identifier.value`` iff *Source* is "PMC" with ``Identifier.namespace`` as "pmc")
-- PMID (``Medline.pmid``)
-- PubDate (``Medline.pub_date``)
+- PMID (``Citation.pmid``)
+- PubDate (``Citation.pub_date``)
 - PublicationType (``PublicationType.value``)
 - QualifierName (``Qualifier.name`` with *MajorTopicYN* as ``Qualifier.major``)
 - RegistryNumber (``Chemical.uid``)
 - Suffix (``Author.suffix``)
 - VernacularTitle (``Section.name`` "Vernacular", ``Section.content``)
-- Volume (``Medline.issue``)
+- Volume (``Citation.issue``)
 
 Version History
 ===============
 
+2.1.6
+  - Work-around for parsing citations that have an empty ArticleTitle element (which they
+    shouldn't, according to the DTD): Either use the VernacularTitle (e.g., PMID 22536004), or
+    otherwise set the title to "UNKNOWN" (the empty string is not a valid title) and log a
+    warning.
+  - Work-around for non-unique PublicationType entries (e.g., PMID 10500000): drop non-unique
+    PublicationTypes (with the same PMID and value).
+  - Corrected left-over "Medline" entity names in this document to "Citation".
 2.1.5
   - Added page_size=MAX and synchronous=OFF pragmas for SQLite DBs (hat-tip to Jason)
 2.1.4

@@ -340,33 +340,33 @@ To summarize, \fImedic\fP by default \fBremoves\fP alternate citations.
 \fBpmid\fP:FK(Citation), \fBsource\fP:ENUM(type), copyright:TEXT
 .TP
 .B Section (sections)
-\fBpmid\fP:FK(Medline), \fBsource\fP:ENUM(type), \fBseq\fP:SMALLINT,
+\fBpmid\fP:FK(Citation), \fBsource\fP:ENUM(type), \fBseq\fP:SMALLINT,
 \fIname\fP:ENUM(section), label:VARCHAR(256), \fIcontent\fP:TEXT
 .TP
 .B Author (authors)
-\fBpmid\fP:FK(Medline), \fBpos\fP:SMALLINT, \fIname\fP:TEXT,
+\fBpmid\fP:FK(Citation), \fBpos\fP:SMALLINT, \fIname\fP:TEXT,
 initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),
 .TP
 .B PublicationType (publication_types)
-\fBpmid\fP:FK(Medline), \fBvalue\fP:VARCHAR(256)
+\fBpmid\fP:FK(Citation), \fBvalue\fP:VARCHAR(256)
 .TP
 .B Descriptor (descriptors)
-\fBpmid\fP:FK(Medline), \fBnum\fP:SMALLINT, major:BOOL, \fIname\fP:TEXT
+\fBpmid\fP:FK(Citation), \fBnum\fP:SMALLINT, major:BOOL, \fIname\fP:TEXT
 .TP
 .B Qualifier (qualifiers)
 \fBpmid\fP:FK(Descriptor), \fBnum\fP:FK(Descriptor), \fBsub\fP:SMALLINT, major:BOOL, \fIname\fP:TEXT
 .TP
 .B Identifier (identifiers)
-\fBpmid\fP:FK(Medline), \fBnamespace\fP:VARCHAR(32), \fIvalue\fP:VARCHAR(256)
+\fBpmid\fP:FK(Citation), \fBnamespace\fP:VARCHAR(32), \fIvalue\fP:VARCHAR(256)
 .TP
 .B Database (databases)
-\fBpmid\fP:FK(Medline), \fBname\fP:VARCHAR(32), \fBaccession\fP:VARCHAR(256)
+\fBpmid\fP:FK(Citation), \fBname\fP:VARCHAR(32), \fBaccession\fP:VARCHAR(256)
 .TP
 .B Chemical (chemicals)
-\fBpmid\fP:FK(Medline), \fBidx\fP:VARCHAR(32), uid:VARCHAR(256), \fIname\fP:VARCHAR(256)
+\fBpmid\fP:FK(Citation), \fBidx\fP:VARCHAR(32), uid:VARCHAR(256), \fIname\fP:VARCHAR(256)
 .TP
 .B Keyword (keywords)
-\fBpmid\fP:FK(Medline), \fBowner\fP:ENUM(owner), \fBcnt\fP:SMALLINT, major:BOOL, \fIvalue\fP:TEXT
+\fBpmid\fP:FK(Citation), \fBowner\fP:ENUM(owner), \fBcnt\fP:SMALLINT, major:BOOL, \fIvalue\fP:TEXT
 .UNINDENT
 .INDENT 0.0
 .IP \(bu 2
@@ -378,7 +378,7 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),
 .SS Entities
 .INDENT 0.0
 .IP \(bu 2
-MedlineCitation and ArticleTitle (\fBMedline\fP and \fBIdentifier\fP)
+MedlineCitation and ArticleTitle (\fBCitation\fP and \fBIdentifier\fP)
 .IP \(bu 2
 Abstract and OtherAbstract (\fBAbstract\fP and \fBSection\fP)
 .IP \(bu 2
@@ -415,11 +415,11 @@ CopyrightInformation (\fBAbstract.copyright\fP)
 .IP \(bu 2
 DataBankName (\fBDatabase.name\fP)
 .IP \(bu 2
-DateCompleted (\fBMedline.completed\fP)
+DateCompleted (\fBCitation.completed\fP)
 .IP \(bu 2
-DateCreated (\fBMedline.created\fP)
+DateCreated (\fBCitation.created\fP)
 .IP \(bu 2
-DateRevised (\fBMedline.revised\fP)
+DateRevised (\fBCitation.revised\fP)
 .IP \(bu 2
 DescriptorName (\fBDescriptor.name\fP with \fIMajorTopicYN\fP as \fBDescriptor.major\fP)
 .IP \(bu 2
@@ -429,27 +429,27 @@ ForeName (\fBAuthor.forename\fP)
 .IP \(bu 2
 Initials (\fBAuthor.initials\fP)
 .IP \(bu 2
-Issue (\fBMedline.issue\fP)
+Issue (\fBCitation.issue\fP)
 .IP \(bu 2
 Keyword (\fBKeyword.value\fP with \fIOwner\fP as \fBKeyword.owner\fP and \fIMajorTopicYN\fP as \fBKeyword.major\fP)
 .IP \(bu 2
 LastName (\fBAuthor.name\fP)
 .IP \(bu 2
-MedlineCitation (with \fIStatus\fP as \fBMedline.status\fP)
+MedlineCitation (with \fIStatus\fP as \fBCitation.status\fP)
 .IP \(bu 2
-MedlineTA (\fBMedline.journal\fP)
+MedlineTA (\fBCitation.journal\fP)
 .IP \(bu 2
 NameOfSubstance (\fBChemical.name\fP)
 .IP \(bu 2
-MedlinePgn (\fBMedline.pagination\fP)
+MedlinePgn (\fBCitation.pagination\fP)
 .IP \(bu 2
 OtherAbstract (with \fIType\fP as \fBAbstract.source\fP)
 .IP \(bu 2
 OtherID (\fBIdentifier.value\fP iff \fISource\fP is "PMC" with \fBIdentifier.namespace\fP as "pmc")
 .IP \(bu 2
-PMID (\fBMedline.pmid\fP)
+PMID (\fBCitation.pmid\fP)
 .IP \(bu 2
-PubDate (\fBMedline.pub_date\fP)
+PubDate (\fBCitation.pub_date\fP)
 .IP \(bu 2
 PublicationType (\fBPublicationType.value\fP)
 .IP \(bu 2
@@ -461,10 +461,24 @@ Suffix (\fBAuthor.suffix\fP)
 .IP \(bu 2
 VernacularTitle (\fBSection.name\fP "Vernacular", \fBSection.content\fP)
 .IP \(bu 2
-Volume (\fBMedline.issue\fP)
+Volume (\fBCitation.issue\fP)
 .UNINDENT
 .SH VERSION HISTORY
 .INDENT 0.0
+.TP
+.B 2.1.6
+.INDENT 7.0
+.IP \(bu 2
+Work\-around for parsing citations that have an empty ArticleTitle element (which they
+shouldn\(aqt, according to the DTD): Either use the VernacularTitle (e.g., PMID 22536004), or
+otherwise set the title to "UNKNOWN" (the empty string is not a valid title) and log a
+warning.
+.IP \(bu 2
+Work\-around for non\-unique PublicationType entries (e.g., PMID 10500000): drop non\-unique
+PublicationTypes (with the same PMID and value).
+.IP \(bu 2
+Corrected left\-over "Medline" entity names in this document to "Citation".
+.UNINDENT
 .TP
 .B 2.1.5
 .INDENT 7.0

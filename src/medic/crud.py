@@ -195,6 +195,7 @@ def _streamInstances(session: Session, handle, stream: iter) -> int:
 
 def _collectCitation(stream: iter) -> iter:
     """Collect PMIDs or whole citation lists from the stream."""
+    pub_types = []  # ouch - there are non-unique PublicationType entries in PubMed...
     citation = []
     pmid = None
 
@@ -207,11 +208,18 @@ def _collectCitation(stream: iter) -> iter:
                 if citation:
                     yield citation
                     citation = []
+                    pub_types = []
 
                 pmid = instance.pmid
                 logger.debug("collecting PMID %i", pmid)
 
-            citation.append(instance)
+
+            if isinstance(instance, PublicationType):
+                if instance.value not in pub_types:
+                    citation.append(instance)
+                    pub_types.append(instance.value)
+            else:
+                citation.append(instance)
 
     if len(citation):
         yield citation
