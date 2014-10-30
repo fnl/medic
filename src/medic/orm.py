@@ -697,6 +697,10 @@ class Section(_Base, SelectMixin):
             section label as defined by the publisher (if any)
         content
             the text content of the section
+        truncated
+            if the text content was truncated by PubMed
+            that means the content contained the string "(ABSTRACT TRUNCATED AT 250 WORDS)" at
+            its end; this message is removed by the parser
 
     Primary Key: ``(pmid, source, seq)``
     """
@@ -716,8 +720,10 @@ class Section(_Base, SelectMixin):
     name = Column(Unicode(length=64), CheckConstraint("name <> ''"), nullable=False)
     label = Column(Unicode(length=256), CheckConstraint("label <> ''"), nullable=True)
     content = Column(UnicodeText, CheckConstraint("content <> ''"), nullable=False)
+    truncated = Column(Boolean, nullable=False, default=False)
 
-    def __init__(self, pmid: int, source: str, seq: int, name: str, content: str, label: str=None):
+    def __init__(self, pmid: int, source: str, seq: int, name: str, content: str,
+                 label: str=None, truncated: bool=False):
         assert pmid > 0, pmid
         assert source in Section.SOURCES, repr(source)
         assert seq > 0, seq
@@ -730,11 +736,12 @@ class Section(_Base, SelectMixin):
         self.name = name
         self.label = label
         self.content = content
+        self.truncated = bool(truncated)
 
     def __str__(self):
-        return '{}\t{}\t{}\t{}\t{}\t{}\n'.format(
+        return '{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(
             NULL(self.pmid), NULL(self.source), NULL(self.seq), NULL(self.name),
-            NULL(self.label), STRING(self.content)
+            NULL(self.label), STRING(self.content), NULL(self.truncated)
         )
 
     def __repr__(self):
@@ -747,7 +754,8 @@ class Section(_Base, SelectMixin):
             self.seq == other.seq and \
             self.name == other.name and \
             self.label == other.label and \
-            self.content == other.content
+            self.content == other.content and \
+            self.truncated == other.truncated
 
 
 class Abstract(_Base, SelectMixin):

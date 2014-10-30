@@ -240,6 +240,8 @@ class Parser:
 class MedlineXMLParser(Parser):
     """A parser for (offline) MEDLINE XML (files)."""
 
+    TRUNC_MSG = re.compile(r'\(ABSTRACT TRUNCATED AT \d+ WORDS\)$')
+
     def __init__(self, *args, **kwargs):
         super(MedlineXMLParser, self).__init__(*args, **kwargs)
         self.seq = 0
@@ -274,7 +276,13 @@ class MedlineXMLParser(Parser):
         name = element.get('NlmCategory', 'Unassigned').capitalize()
         content = element.text.strip()
         label = element.get('Label', None)
-        return Section(self.pmid, source, self.seq, name, content, label)
+        truncated = False
+
+        if MedlineXMLParser.TRUNC_MSG.search(content):
+            content = MedlineXMLParser.TRUNC_MSG.sub('', content).rstrip()
+            truncated = True
+
+        return Section(self.pmid, source, self.seq, name, content, label, truncated)
 
     def AuthorList(self, element):
         for pos, author in enumerate(element.getchildren()):

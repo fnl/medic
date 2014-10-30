@@ -206,7 +206,7 @@
             </PersonalNameSubjectList>
             <OtherID Source="NLM">PMC12345 [junk here]</OtherID>
             <OtherAbstract Type="Publisher">
-                <AbstractText>explanation for publisher abstract</AbstractText>
+                <AbstractText>explanation for publisher abstract(ABSTRACT TRUNCATED AT 250 WORDS)</AbstractText>
             </OtherAbstract>
             <OtherAbstract Type="NASA">
                 <AbstractText Label="NASA label"
