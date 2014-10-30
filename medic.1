@@ -341,7 +341,7 @@ To summarize, \fImedic\fP by default \fBremoves\fP alternate citations.
 .TP
 .B Section (sections)
 \fBpmid\fP:FK(Citation), \fBsource\fP:ENUM(type), \fBseq\fP:SMALLINT,
-\fIname\fP:ENUM(section), label:VARCHAR(256), \fIcontent\fP:TEXT
+\fIname\fP:ENUM(section), label:VARCHAR(256), \fIcontent\fP:TEXT, \fItruncated\fP:BOOLEAN
 .TP
 .B Author (authors)
 \fBpmid\fP:FK(Citation), \fBpos\fP:SMALLINT, \fIname\fP:TEXT,
@@ -407,7 +407,7 @@ AccessionNumber (\fBDatabase.accession\fP)
 .IP \(bu 2
 ArticleId (\fBIdentifier.value\fP with \fIIdType\fP as \fBIdentifier.namesapce\fP; only available in online PubMed XML)
 .IP \(bu 2
-ArticleTitle (\fBCitation.title\fP if not empty (alt.: VernacularTitle or "UNKNOWN")
+ArticleTitle (\fBCitation.title\fP; if empty, use the VernacularTitle or set to "UNKNOWN")
 .IP \(bu 2
 CollectiveName (\fBAuthor.name\fP)
 .IP \(bu 2
@@ -465,6 +465,28 @@ Volume (\fBCitation.issue\fP)
 .UNINDENT
 .SH VERSION HISTORY
 .INDENT 0.0
+.TP
+.B 2.2.0
+.INDENT 7.0
+.IP \(bu 2
+A column was added to the ORM, resulting in backwards incompatible change: From this version
+on, the trailing string "\fB(ABSTRACT TRUNCATED AT xxx WORDS)\fP" is stripped from AbstractText
+and instead the flag \fBtruncated\fP has be added to table \fBsections\fP and is set if the string
+was present (but has been removed); To migrate your Postgres database, please run:
+.INDENT 2.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+ALTER TABLE sections ADD "truncated" boolean NOT NULL DEFAULT \(aqfalse\(aq;
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.IP \(bu 2
+MEDLINE formatted output is now written to STDOUT or a single file, because it makes selecting
+specific fields with grep very easy. Records are separated with an empty line.
+.UNINDENT
 .TP
 .B 2.1.7
 .INDENT 7.0

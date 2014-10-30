@@ -219,7 +219,7 @@ Abstract (abstracts)
 
 Section (sections)
   **pmid**:FK(Citation), **source**:ENUM(type), **seq**:SMALLINT,
-  *name*:ENUM(section), label:VARCHAR(256), *content*:TEXT
+  *name*:ENUM(section), label:VARCHAR(256), *content*:TEXT, *truncated*:BOOLEAN
 
 Author (authors)
   **pmid**:FK(Citation), **pos**:SMALLINT, *name*:TEXT,
@@ -272,7 +272,7 @@ Fields/Values
 - AbstractText (``Section.name`` "Abstract" or the *NlmCategory*, ``Section.content`` with *Label* as ``Section.label``)
 - AccessionNumber (``Database.accession``)
 - ArticleId (``Identifier.value`` with *IdType* as ``Identifier.namesapce``; only available in online PubMed XML)
-- ArticleTitle (``Citation.title`` if not empty (alt.: VernacularTitle or "UNKNOWN")
+- ArticleTitle (``Citation.title``; if empty, use the VernacularTitle or set to "UNKNOWN")
 - CollectiveName (``Author.name``)
 - CopyrightInformation (``Abstract.copyright``)
 - DataBankName (``Database.name``)
@@ -304,6 +304,16 @@ Fields/Values
 Version History
 ===============
 
+2.2.0
+  - A column was added to the ORM, resulting in backwards incompatible change: From this version
+    on, the trailing string "``(ABSTRACT TRUNCATED AT xxx WORDS)``" is stripped from AbstractText
+    and instead the flag ``truncated`` has be added to table ``sections`` and is set if the string
+    was present (but has been removed); To migrate your Postgres database, please run::
+
+        ALTER TABLE sections ADD "truncated" boolean NOT NULL DEFAULT 'false';
+
+  - MEDLINE formatted output is now written to STDOUT or a single file, because it makes selecting
+    specific fields with grep very easy. Records are separated with an empty line.
 2.1.7
   - Work-around for the limit of SQLite that only lets you use 999 variables per query.
   - Corrected the outdated VernacularTitle documentation in this document.
