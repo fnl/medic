@@ -43,7 +43,7 @@ def Main(command, files_or_pmids, session, unique=True):
 
 
 def WriteTabular(query, output_file: str):
-    """Write `query` results as TSV to file or STDOUT if `output_file` `== '.'`."""
+    """Write `query` results as TSV to file or STDOUT if ``output_file == '.'``\ ."""
     def prune(string):
         return string.replace('\n', ' ').replace('\t', ' ')
 
@@ -71,13 +71,11 @@ def WriteTabular(query, output_file: str):
 
 
 def WriteHTML(query, output_file: str):
-    """Write `query` results as HTML to file or STDOUT if `output_file` ` == '.'`."""
+    """Write `query` results as HTML to a file or STDOUT if ``output_file == '.'``\ ."""
     from medic.web import FormatHTML
 
     logging.debug("writing to HTML file %s", output_file)
-    file = open(
-        output_file, 'wt', encoding='utf-8'
-    ) if output_file != '.' else sys.stdout
+    file = open(output_file, 'wt', encoding='utf-8') if output_file != '.' else sys.stdout
 
     try:
         print(FormatHTML(query), file=file)
@@ -88,11 +86,12 @@ def WriteHTML(query, output_file: str):
 
 def WriteTIAB(query, output_dir: str):
     """Write `query` results as TIAB plain-text files in `output_dir`."""
+    assert os.path.isdir(output_dir), '%s not a directory' % output_dir
     logging.debug("writing TIAB to directory %s", output_dir)
 
     for rec in query:
         logging.debug("writing PMID %i as TIAB", rec.pmid)
-        file = open(os.path.join(output_dir, "{}.txt".format(rec.pmid)), 'wt')
+        file = open(os.path.join(output_dir, "{}.txt".format(rec.pmid)), 'wt', encoding='utf-8')
 
         try:
             print(rec.title, file=file)
@@ -118,18 +117,16 @@ def WriteSection(section, file):
     print(section.content, file=file)
 
 
-def WriteMedline(query, output_dir: str):
-    """Write `query` results as MEDLINE plain-text files in `output_dir`."""
-    logging.debug("writing MEDLINE to directory %s", output_dir)
+def WriteMedline(query, output_file: str):
+    """Write `query` results to a MEDLINE file or STDOUT if ``output_file == '.'``\ ."""
+    logging.debug("writing MEDLINE to file %s", output_file)
+    file = open(output_file, 'wt', encoding='utf-8') if output_file != '.' else sys.stdout
 
-    for rec in query:
-        logging.debug("writing PMID %i as MEDLINE", rec.pmid)
-        file = open(os.path.join(output_dir, "{}.txt".format(rec.pmid)), 'wt')
-
-        try:
+    try:
+        for rec in query:
             WriteMedlineRecord(rec, file)
-        finally:
-            file.close()
+    finally:
+        file.close()
 
 
 def WriteMedlineRecord(record, file):
@@ -145,6 +142,7 @@ def WriteMedlineRecord(record, file):
     owner = None
     source = "{}. {}".format(record.journal, record.pub_date)
 
+    logging.debug("writing PMID %i as MEDLINE", record.pmid)
     WriteMedlineItem('PMID', record.pmid)
     WriteMedlineItem('STAT', record.status)
     WriteMedlineItem('DA', medlineDate(record.created))
@@ -229,6 +227,7 @@ def WriteMedlineRecord(record, file):
         else:
             WriteMedlineItem('AID', "{} [{}]".format(uid.value, ns))
 
+    print('', file=file)  # empty line
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
@@ -263,12 +262,10 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--format', choices=['full', 'html', 'tiab', 'tsv'], default='medline',
-        help='medline: [default] '
-             'write all content to one MEDLINE file per PMID; '
-             'tiab: write only title and abstract plain-text to files; '
-             'html: write all content to one large HTML file; '
-             'tsv: only write per line PMID-title-abstract '
-             'to one single .tsv table'
+        help='medline: [default] write all content to one MEDLINE file; '
+             'html: write all content to one HTML file; '
+             'tsv: write one TSV line per PMID, title, and abstract; '
+             'tiab: write title and abstract only plain-text to files; '
     )
     parser.add_argument(
         '--all', action='store_true',
@@ -286,8 +283,8 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--output', metavar='DIR', default=os.path.curdir,
-        help='dump/write to a specific directory '
-             '(or file for format "tab" or "html")'
+        help='dump/write to a specific directory or file '
+             '(for formats "medline", "tsv" and "html")'
     )
     parser.add_argument(
         '--error', action='store_const', const=logging.ERROR,
