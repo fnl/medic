@@ -692,7 +692,7 @@ class Section(_Base, SelectMixin):
         seq
             the sequence of sections in the abstract (starting from 1)
         name
-            the name of the section (Abstract, Background, Methods, Unlabelled, ...)
+            the name of the section (Abstract, Background, Methods, Unassigned, ...)
         label
             section label as defined by the publisher (if any)
         content

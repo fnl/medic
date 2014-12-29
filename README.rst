@@ -10,6 +10,7 @@ download eUtils' PubMed_ XML records,
 bootstrapping a local MEDLINE/PubMed database,
 updating and/or deleting the records, and
 writing the contents of selected PMIDs into flat-files.
+A more in-depth tutorial for this tool is part of my blog_.
 
 .. image:: https://zenodo.org/badge/4016/fnl/medic.png
    :target: https://zenodo.org/record/9968
@@ -304,6 +305,8 @@ Fields/Values
 Version History
 ===============
 
+dev
+  - Ensured compatibility with the MEDLINE DTD updates for 2015 and cleaned some code pieces.
 2.2.0
   - A column was added to the ORM, resulting in backwards incompatible change: From this version
     on, the trailing string "``(ABSTRACT TRUNCATED AT xxx WORDS)``" is stripped from AbstractText
@@ -395,3 +398,4 @@ Copyright 2012-2014 Florian Leitner. All rights reserved.
 .. _GNU GPL v3: http://www.gnu.org/licenses/gpl-3.0.html
 .. _MEDLINE: http://www.nlm.nih.gov/bsd/mms/medlineelements.html
 .. _PubMed: http://www.ncbi.nlm.nih.gov/pubmed
+.. _blog: http://fnl.es/medline-kung-fu.html
