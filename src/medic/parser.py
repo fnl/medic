@@ -282,6 +282,9 @@ class MedlineXMLParser(Parser):
             content = MedlineXMLParser.TRUNC_MSG.sub('', content).rstrip()
             truncated = True
 
+            if not content:
+                content = ' '  # truncated the whole section; use a space (placeholder)
+
         return Section(self.pmid, source, self.seq, name, content, label, truncated)
 
     def AuthorList(self, element):

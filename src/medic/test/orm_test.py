@@ -350,7 +350,7 @@ class SectionTest(TestCase, TestMixin):
     # METHODS
 
     def testToString(self):
-        self.assertEqual('1\tNLM\t1\tTitle\tlabel\t"co\\n\\tent"\\\\\n',
+        self.assertEqual('1\tNLM\t1\tTitle\tlabel\t"co\\n\\tent"\\\\\tF\n',
                          str(Section(1, 'NLM', 1, 'Title', "\"co\n\tent\"\\", 'label')))
 
     def testToRepr(self):

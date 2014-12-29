@@ -741,7 +741,7 @@ class Section(_Base, SelectMixin):
     def __str__(self):
         return '{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(
             NULL(self.pmid), NULL(self.source), NULL(self.seq), NULL(self.name),
-            NULL(self.label), STRING(self.content), NULL(self.truncated)
+            NULL(self.label), STRING(self.content), 'T' if self.truncated else 'F'
         )
 
     def __repr__(self):
