@@ -332,6 +332,8 @@ class MedlineXMLParser(Parser):
                     pass
                 elif child.tag == 'Affiliation':
                     pass
+                elif child.tag == 'AffiliationInfo':
+                    pass
                 else:
                     logger.warning('unknown Author element %s "%s" in %i',
                                    child.tag, text, self.pmid)
