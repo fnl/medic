@@ -68,6 +68,8 @@ class ParserTest(TestCase):
         self.stream = open(ParserTest.MEDLINE_STRUCTURE_FILE)
 
     def parse(self, parser, items):
+        reps = sorted(str(i) for i in items)
+        recv = []
         to_delete = [123, 987]
         last_item = None
         count = -1
@@ -79,12 +81,15 @@ class ParserTest(TestCase):
                 to_delete.remove(item)
             else:
                 count += 1
-                self.assertEqual(str(items[count]), str(item))
-                self.assertEqual(items[count], item, "\n" + str(item) + str(items[count]))
+                recv.append(str(item))
+                self.assertTrue(item in items, "\n" + str(item) + str(items[count]))
                 last_item = item
                 yield item
 
         self.assertEqual(len(items), count + 1, repr(last_item))
+
+        for expected, received in zip(reps, sorted(recv)):
+            self.assertEqual(expected, received)
 
     def testParseToDB(self):
         orm.InitDb(URL('sqlite'), module=dbapi2)

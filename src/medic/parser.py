@@ -357,12 +357,13 @@ class MedlineXMLParser(Parser):
         name = element.find('DataBankName')
 
         if name is not None and name.text:
-            done = set()
+            accessions = {acc for acc in map(
+                lambda e: e.text.strip() if e.text else None,
+                element.find('AccessionNumberList').getchildren()
+            ) if acc}
 
-            for acc in element.find('AccessionNumberList').getchildren():
-                if acc.text and acc.text not in done:
-                    done.add(acc.text)
-                    yield Database(self.pmid, name.text, acc.text)
+            for acc in accessions:
+                yield Database(self.pmid, name.text, acc)
 
     def ELocationID(self, element):
         ns = element.get('EIdType').strip().lower()
