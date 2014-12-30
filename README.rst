@@ -307,6 +307,7 @@ Version History
 
 dev
   - Ensured compatibility with the MEDLINE DTD updates for 2015 and cleaned some code pieces.
+    Includes a fix for the bad (long) keyword in PMID 25114415 (with a carriage return).
 2.2.0
   - A column was added to the ORM, resulting in backwards incompatible change: From this version
     on, the trailing string "``(ABSTRACT TRUNCATED AT xxx WORDS)``" is stripped from AbstractText

@@ -385,6 +385,9 @@ class MedlineXMLParser(Parser):
             if keyword.text is not None:
                 text = keyword.text.strip()
 
+                if '\r' in text:
+                    text = text[:text.find('\r')]
+
                 if text:
                     yield Keyword(
                         self.pmid, owner, cnt + 1, text,

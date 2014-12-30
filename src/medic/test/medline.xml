@@ -215,7 +215,7 @@
             </OtherAbstract>
             <KeywordList>
                 <Keyword>NLM minor keyword</Keyword>
-                <Keyword MajorTopicYN="Y">major keyword</Keyword>
+                <Keyword MajorTopicYN="Y">major keyword&#xd;junk</Keyword>
                 <Keyword MajorTopicYN="N">minor keyword</Keyword>
             </KeywordList>
             <KeywordList Owner="NASA">
