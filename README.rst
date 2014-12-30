@@ -305,10 +305,9 @@ Fields/Values
 Version History
 ===============
 
-dev
+2.2.0
   - Ensured compatibility with the MEDLINE DTD updates for 2015 and cleaned some code pieces.
     Includes a fix for the bad (long) keyword in PMID 25114415 (with a carriage return).
-2.2.0
   - A column was added to the ORM, resulting in backwards incompatible change: From this version
     on, the trailing string "``(ABSTRACT TRUNCATED AT xxx WORDS)``" is stripped from AbstractText
     and instead the flag ``truncated`` has be added to table ``sections`` and is set if the string
@@ -316,6 +315,8 @@ dev
 
         ALTER TABLE sections ADD "truncated" boolean NOT NULL DEFAULT 'false';
 
+    Note that for one case this produces a Section with just one whitespace character, because
+    the original content was only the "ABSTRACT TRUNCATED..." message.
   - MEDLINE formatted output is now written to STDOUT or a single file, because it makes selecting
     specific fields with grep very easy. Records are separated with an empty line.
 2.1.7

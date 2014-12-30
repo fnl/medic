@@ -346,7 +346,8 @@ ul.auto-toc {
 download eUtils' <a class="reference external" href="http://www.ncbi.nlm.nih.gov/pubmed">PubMed</a> XML records,
 bootstrapping a local MEDLINE/PubMed database,
 updating and/or deleting the records, and
-writing the contents of selected PMIDs into flat-files.</p>
+writing the contents of selected PMIDs into flat-files.
+A more in-depth tutorial for this tool is part of my <a class="reference external" href="http://fnl.es/medline-kung-fu.html">blog</a>.</p>
 <a class="reference external image-reference" href="https://zenodo.org/record/9968"><img alt="DOI:10.5281/zendo.9968" src="https://zenodo.org/badge/4016/fnl/medic.png" /></a>
 <p>DOI:10.5281/zendo.9968</p>
 <div class="section" id="synopsis">
@@ -623,6 +624,9 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),</dd>
 <dl class="docutils">
 <dt>2.2.0</dt>
 <dd><ul class="first last">
+<li><p class="first">Ensured compatibility with the MEDLINE DTD updates for 2015 and cleaned some code pieces.
+Includes a fix for the bad (long) keyword in PMID 25114415 (with a carriage return).</p>
+</li>
 <li><p class="first">A column was added to the ORM, resulting in backwards incompatible change: From this version
 on, the trailing string &quot;<tt class="docutils literal">(ABSTRACT TRUNCATED AT xxx WORDS)</tt>&quot; is stripped from AbstractText
 and instead the flag <tt class="docutils literal">truncated</tt> has be added to table <tt class="docutils literal">sections</tt> and is set if the string
@@ -630,6 +634,8 @@ was present (but has been removed); To migrate your Postgres database, please ru
 <pre class="literal-block">
 ALTER TABLE sections ADD &quot;truncated&quot; boolean NOT NULL DEFAULT 'false';
 </pre>
+<p>Note that for one case this produces a Section with just one whitespace character, because
+the original content was only the &quot;ABSTRACT TRUNCATED...&quot; message.</p>
 </li>
 <li><p class="first">MEDLINE formatted output is now written to STDOUT or a single file, because it makes selecting
 specific fields with grep very easy. Records are separated with an empty line.</p>

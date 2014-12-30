@@ -36,6 +36,7 @@ download eUtils\(aq \fI\%PubMed\fP XML records,
 bootstrapping a local MEDLINE/PubMed database,
 updating and/or deleting the records, and
 writing the contents of selected PMIDs into flat\-files.
+A more in\-depth tutorial for this tool is part of my \fI\%blog\fP\&.
 \fI\%[image: DOI:10.5281/zendo.9968/https://zenodo.org/badge/4016/fnl/medic.png]
 \fP
 .sp
@@ -469,6 +470,9 @@ Volume (\fBCitation.issue\fP)
 .B 2.2.0
 .INDENT 7.0
 .IP \(bu 2
+Ensured compatibility with the MEDLINE DTD updates for 2015 and cleaned some code pieces.
+Includes a fix for the bad (long) keyword in PMID 25114415 (with a carriage return).
+.IP \(bu 2
 A column was added to the ORM, resulting in backwards incompatible change: From this version
 on, the trailing string "\fB(ABSTRACT TRUNCATED AT xxx WORDS)\fP" is stripped from AbstractText
 and instead the flag \fBtruncated\fP has be added to table \fBsections\fP and is set if the string
@@ -483,6 +487,9 @@ ALTER TABLE sections ADD "truncated" boolean NOT NULL DEFAULT \(aqfalse\(aq;
 .fi
 .UNINDENT
 .UNINDENT
+.sp
+Note that for one case this produces a Section with just one whitespace character, because
+the original content was only the "ABSTRACT TRUNCATED..." message.
 .IP \(bu 2
 MEDLINE formatted output is now written to STDOUT or a single file, because it makes selecting
 specific fields with grep very easy. Records are separated with an empty line.
