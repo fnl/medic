@@ -118,9 +118,9 @@ medic insert \-\-url sqlite:///tmp.db 123456
 .UNINDENT
 .UNINDENT
 .sp
-To create the tables in the DB, you can "try" to fetch a record: As the DB
-is empty, this will not write anything, but SQL Alchemy will create the tables
-for you in the DB:
+To \fIcreate the tables in an empty DB\fP, you can just "try" to fetch a record:
+As the DB is empty, this will not write anything, but SQL Alchemy will create
+the tables for you in the DB:
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -367,7 +367,8 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),
 \fBpmid\fP:FK(Citation), \fBnum\fP:SMALLINT, major:BOOL, \fIname\fP:TEXT
 .TP
 .B Qualifier (qualifiers)
-\fBpmid\fP:FK(Descriptor), \fBnum\fP:FK(Descriptor), \fBsub\fP:SMALLINT, major:BOOL, \fIname\fP:TEXT
+\fBpmid\fP:FK(Descriptor), \fBnum\fP:FK(Descriptor), \fBsub\fP:SMALLINT,
+major:BOOL, \fIname\fP:TEXT
 .TP
 .B Identifier (identifiers)
 \fBpmid\fP:FK(Citation), \fBnamespace\fP:VARCHAR(32), \fIvalue\fP:VARCHAR(256)
@@ -376,10 +377,12 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),
 \fBpmid\fP:FK(Citation), \fBname\fP:VARCHAR(32), \fBaccession\fP:VARCHAR(256)
 .TP
 .B Chemical (chemicals)
-\fBpmid\fP:FK(Citation), \fBidx\fP:VARCHAR(32), uid:VARCHAR(256), \fIname\fP:VARCHAR(256)
+\fBpmid\fP:FK(Citation), \fBidx\fP:VARCHAR(32), uid:VARCHAR(256),
+\fIname\fP:VARCHAR(256)
 .TP
 .B Keyword (keywords)
-\fBpmid\fP:FK(Citation), \fBowner\fP:ENUM(owner), \fBcnt\fP:SMALLINT, major:BOOL, \fIvalue\fP:TEXT
+\fBpmid\fP:FK(Citation), \fBowner\fP:ENUM(owner), \fBcnt\fP:SMALLINT,
+major:BOOL, \fIvalue\fP:TEXT
 .UNINDENT
 .INDENT 0.0
 .IP \(bu 2
@@ -488,13 +491,16 @@ Added special argument "ALL" to write/delete all records.
 .B 2.2.0
 .INDENT 7.0
 .IP \(bu 2
-Ensured compatibility with the MEDLINE DTD updates for 2015 and cleaned some code pieces.
-Includes a fix for the bad (long) keyword in PMID 25114415 (with a carriage return).
+Ensured compatibility with the MEDLINE DTD updates for 2015 and cleaned some
+code pieces.
+Includes a fix for the bad (long) keyword in PMID 25114415 (with a carriage
+return).
 .IP \(bu 2
-A column was added to the ORM, resulting in backwards incompatible change: From this version
-on, the trailing string "\fB(ABSTRACT TRUNCATED AT xxx WORDS)\fP" is stripped from AbstractText
-and instead the flag \fBtruncated\fP has be added to table \fBsections\fP and is set if the string
-was present (but has been removed); To migrate your Postgres database, please run:
+A column was added to the ORM, resulting in backwards incompatible change:
+From this version on, the trailing string "\fB(ABSTRACT TRUNCATED AT xxx
+WORDS)\fP" is stripped from AbstractText and instead the flag \fBtruncated\fP
+has be added to table \fBsections\fP and is set if the string was present (but
+has been removed); To migrate your Postgres database, please run:
 .INDENT 2.0
 .INDENT 3.5
 .sp
@@ -506,17 +512,20 @@ ALTER TABLE sections ADD "truncated" boolean NOT NULL DEFAULT \(aqfalse\(aq;
 .UNINDENT
 .UNINDENT
 .sp
-Note that for one case this produces a Section with just one whitespace character, because
-the original content was only the "ABSTRACT TRUNCATED..." message.
+Note that for one case this produces a Section with just one whitespace
+character, because the original content was only the "ABSTRACT TRUNCATED..."
+message.
 .IP \(bu 2
-MEDLINE formatted output is now written to STDOUT or a single file, because it makes selecting
-specific fields with grep very easy. Records are separated with an empty line.
+MEDLINE formatted output is now written to STDOUT or a single file, because
+it makes selecting specific fields with grep very easy. Records are
+separated with an empty line.
 .UNINDENT
 .TP
 .B 2.1.7
 .INDENT 7.0
 .IP \(bu 2
-Work\-around for the limit of SQLite that only lets you use 999 variables per query.
+Work\-around for the limit of SQLite that only lets you use 999 variables per
+query.
 .IP \(bu 2
 Corrected the outdated VernacularTitle documentation in this document.
 .UNINDENT
@@ -524,13 +533,13 @@ Corrected the outdated VernacularTitle documentation in this document.
 .B 2.1.6
 .INDENT 7.0
 .IP \(bu 2
-Work\-around for parsing citations that have an empty ArticleTitle element (which they
-shouldn\(aqt, according to the DTD): Either use the VernacularTitle (e.g., PMID 22536004), or
-otherwise set the title to "UNKNOWN" (the empty string is not a valid title) and log a
-warning.
+Work\-around for parsing citations that have an empty ArticleTitle element
+(which they shouldn\(aqt, according to the DTD): Either use the VernacularTitle
+(e.g., PMID 22536004), or otherwise set the title to "UNKNOWN" (the empty
+string is not a valid title) and log a warning.
 .IP \(bu 2
-Work\-around for non\-unique PublicationType entries (e.g., PMID 10500000): drop non\-unique
-PublicationTypes (with the same PMID and value).
+Work\-around for non\-unique PublicationType entries (e.g., PMID 10500000):
+drop non\-unique PublicationTypes (with the same PMID and value).
 .IP \(bu 2
 Corrected left\-over "Medline" entity names in this document to "Citation".
 .UNINDENT
@@ -538,18 +547,19 @@ Corrected left\-over "Medline" entity names in this document to "Citation".
 .B 2.1.5
 .INDENT 7.0
 .IP \(bu 2
-Added page_size=MAX and synchronous=OFF pragmas for SQLite DBs (hat\-tip to Jason)
+Added page_size=MAX and synchronous=OFF pragmas for SQLite DBs (hat\-tip to
+Jason)
 .UNINDENT
 .TP
 .B 2.1.4
 .INDENT 7.0
 .IP \(bu 2
-A MEDLINE issue found by Jason: PMID 24073073 has an empty keyword and keyword
-list that should not be there; Medic prevents adding improper data to the DB
-by raising an AssertionError.
+A MEDLINE issue found by Jason: PMID 24073073 has an empty keyword and
+keyword list that should not be there; Medic prevents adding improper data
+to the DB by raising an AssertionError.
 To deal with such cases, medic now ensures each keyword is non\-empty before
-attempting to generate a database entry and drops empty (i.e., whitespace\-only)
-keyword data.
+attempting to generate a database entry and drops empty (i.e.,
+whitespace\-only) keyword data.
 .UNINDENT
 .TP
 .B 2.1.3
@@ -581,7 +591,8 @@ refactored HTML output code
 DB schema change from: \fBrecords() \-> sections(content)\fP
 to: \fBcitations(title) \-> abstracts(copyright) \-> sections(content)\fP
 .IP \(bu 2
-name change: the entity/table Medline/records is now called Citation/citations
+name change: the entity/table Medline/records is now called
+Citation/citations
 .IP \(bu 2
 title and copyright text is no longer stored in Section/sections
 .IP \(bu 2
@@ -628,7 +639,8 @@ added MEDLINE output format and made it the default
 .IP \(bu 2
 DB structure change: descriptors.major and qualifiers.major columns swapped
 .IP \(bu 2
-DB structure change: section.name is now an untyped varchar (OtherAbstract separation)
+DB structure change: section.name is now an untyped varchar (OtherAbstract
+separation)
 .IP \(bu 2
 cleaned up the ORM test cases
 .UNINDENT

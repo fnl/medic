@@ -60,9 +60,9 @@ SQLite DB file in the URL option (that will implicitly "create" the DB)::
 
   medic insert --url sqlite:///tmp.db 123456
 
-To create the tables in the DB, you can "try" to fetch a record: As the DB
-is empty, this will not write anything, but SQL Alchemy will create the tables
-for you in the DB::
+To *create the tables in an empty DB*, you can just "try" to fetch a record:
+As the DB is empty, this will not write anything, but SQL Alchemy will create
+the tables for you in the DB::
 
   medic write 123 # for PostgreSQL
   medic --url sqlite:///tmp.db write 123 # for SQLite
@@ -237,7 +237,8 @@ Descriptor (descriptors)
   **pmid**:FK(Citation), **num**:SMALLINT, major:BOOL, *name*:TEXT
 
 Qualifier (qualifiers)
-  **pmid**:FK(Descriptor), **num**:FK(Descriptor), **sub**:SMALLINT, major:BOOL, *name*:TEXT
+  **pmid**:FK(Descriptor), **num**:FK(Descriptor), **sub**:SMALLINT,
+  major:BOOL, *name*:TEXT
 
 Identifier (identifiers)
   **pmid**:FK(Citation), **namespace**:VARCHAR(32), *value*:VARCHAR(256)
@@ -246,10 +247,12 @@ Database (databases)
   **pmid**:FK(Citation), **name**:VARCHAR(32), **accession**:VARCHAR(256)
 
 Chemical (chemicals)
-  **pmid**:FK(Citation), **idx**:VARCHAR(32), uid:VARCHAR(256), *name*:VARCHAR(256)
+  **pmid**:FK(Citation), **idx**:VARCHAR(32), uid:VARCHAR(256),
+  *name*:VARCHAR(256)
 
 Keyword (keywords)
-  **pmid**:FK(Citation), **owner**:ENUM(owner), **cnt**:SMALLINT, major:BOOL, *value*:TEXT
+  **pmid**:FK(Citation), **owner**:ENUM(owner), **cnt**:SMALLINT,
+  major:BOOL, *value*:TEXT
 
 - **bold** (Composite) Primary Key
 - *italic* NOT NULL (Strings that may not be NULL are also never empty.)
@@ -312,39 +315,46 @@ Version History
 2.3.0
   - Added special argument "ALL" to write/delete all records.
 2.2.0
-  - Ensured compatibility with the MEDLINE DTD updates for 2015 and cleaned some code pieces.
-    Includes a fix for the bad (long) keyword in PMID 25114415 (with a carriage return).
-  - A column was added to the ORM, resulting in backwards incompatible change: From this version
-    on, the trailing string "``(ABSTRACT TRUNCATED AT xxx WORDS)``" is stripped from AbstractText
-    and instead the flag ``truncated`` has be added to table ``sections`` and is set if the string
-    was present (but has been removed); To migrate your Postgres database, please run::
+  - Ensured compatibility with the MEDLINE DTD updates for 2015 and cleaned some
+    code pieces.
+    Includes a fix for the bad (long) keyword in PMID 25114415 (with a carriage
+    return).
+  - A column was added to the ORM, resulting in backwards incompatible change:
+    From this version on, the trailing string "``(ABSTRACT TRUNCATED AT xxx
+    WORDS)``" is stripped from AbstractText and instead the flag ``truncated``
+    has be added to table ``sections`` and is set if the string was present (but
+    has been removed); To migrate your Postgres database, please run::
 
         ALTER TABLE sections ADD "truncated" boolean NOT NULL DEFAULT 'false';
 
-    Note that for one case this produces a Section with just one whitespace character, because
-    the original content was only the "ABSTRACT TRUNCATED..." message.
-  - MEDLINE formatted output is now written to STDOUT or a single file, because it makes selecting
-    specific fields with grep very easy. Records are separated with an empty line.
+    Note that for one case this produces a Section with just one whitespace
+    character, because the original content was only the "ABSTRACT TRUNCATED..."
+    message.
+  - MEDLINE formatted output is now written to STDOUT or a single file, because
+    it makes selecting specific fields with grep very easy. Records are
+    separated with an empty line.
 2.1.7
-  - Work-around for the limit of SQLite that only lets you use 999 variables per query.
+  - Work-around for the limit of SQLite that only lets you use 999 variables per
+    query.
   - Corrected the outdated VernacularTitle documentation in this document.
 2.1.6
-  - Work-around for parsing citations that have an empty ArticleTitle element (which they
-    shouldn't, according to the DTD): Either use the VernacularTitle (e.g., PMID 22536004), or
-    otherwise set the title to "UNKNOWN" (the empty string is not a valid title) and log a
-    warning.
-  - Work-around for non-unique PublicationType entries (e.g., PMID 10500000): drop non-unique
-    PublicationTypes (with the same PMID and value).
+  - Work-around for parsing citations that have an empty ArticleTitle element
+    (which they shouldn't, according to the DTD): Either use the VernacularTitle
+    (e.g., PMID 22536004), or otherwise set the title to "UNKNOWN" (the empty
+    string is not a valid title) and log a warning.
+  - Work-around for non-unique PublicationType entries (e.g., PMID 10500000):
+    drop non-unique PublicationTypes (with the same PMID and value).
   - Corrected left-over "Medline" entity names in this document to "Citation".
 2.1.5
-  - Added page_size=MAX and synchronous=OFF pragmas for SQLite DBs (hat-tip to Jason)
+  - Added page_size=MAX and synchronous=OFF pragmas for SQLite DBs (hat-tip to
+    Jason)
 2.1.4
-  - A MEDLINE issue found by Jason: PMID 24073073 has an empty keyword and keyword
-    list that should not be there; Medic prevents adding improper data to the DB
-    by raising an AssertionError.
+  - A MEDLINE issue found by Jason: PMID 24073073 has an empty keyword and
+    keyword list that should not be there; Medic prevents adding improper data
+    to the DB by raising an AssertionError.
     To deal with such cases, medic now ensures each keyword is non-empty before
-    attempting to generate a database entry and drops empty (i.e., whitespace-only)
-    keyword data.
+    attempting to generate a database entry and drops empty (i.e.,
+    whitespace-only) keyword data.
 2.1.3
   - Jason Hennessey changed the (absolute) path of medic's man-page, set to
     ``/usr/local/share/man`` in the setup script, to a relative location
@@ -358,7 +368,8 @@ Version History
 2.1.0
   - DB schema change from: ``records() -> sections(content)``
     to: ``citations(title) -> abstracts(copyright) -> sections(content)``
-  - name change: the entity/table Medline/records is now called Citation/citations
+  - name change: the entity/table Medline/records is now called
+    Citation/citations
   - title and copyright text is no longer stored in Section/sections
   - added a new Abstract/abstracts entity/table with a ``copyright`` attribute
     (formerly stored in ``sections.content`` with ``name`` = 'Copyright') 
@@ -381,7 +392,8 @@ Version History
   - added MEDLINE publication date, volume, issue, and pagination support
   - added MEDLINE output format and made it the default
   - DB structure change: descriptors.major and qualifiers.major columns swapped
-  - DB structure change: section.name is now an untyped varchar (OtherAbstract separation)
+  - DB structure change: section.name is now an untyped varchar (OtherAbstract
+    separation)
   - cleaned up the ORM test cases
 1.1.1
   - code cleanup (PEP8, PyFlake)

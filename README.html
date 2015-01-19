@@ -390,9 +390,9 @@ SQLite DB file in the URL option (that will implicitly &quot;create&quot; the DB
 <pre class="literal-block">
 medic insert --url sqlite:///tmp.db 123456
 </pre>
-<p>To create the tables in the DB, you can &quot;try&quot; to fetch a record: As the DB
-is empty, this will not write anything, but SQL Alchemy will create the tables
-for you in the DB:</p>
+<p>To <em>create the tables in an empty DB</em>, you can just &quot;try&quot; to fetch a record:
+As the DB is empty, this will not write anything, but SQL Alchemy will create
+the tables for you in the DB:</p>
 <pre class="literal-block">
 medic write 123 # for PostgreSQL
 medic --url sqlite:///tmp.db write 123 # for SQLite
@@ -554,15 +554,18 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),</dd>
 <dt>Descriptor (descriptors)</dt>
 <dd><strong>pmid</strong>:FK(Citation), <strong>num</strong>:SMALLINT, major:BOOL, <em>name</em>:TEXT</dd>
 <dt>Qualifier (qualifiers)</dt>
-<dd><strong>pmid</strong>:FK(Descriptor), <strong>num</strong>:FK(Descriptor), <strong>sub</strong>:SMALLINT, major:BOOL, <em>name</em>:TEXT</dd>
+<dd><strong>pmid</strong>:FK(Descriptor), <strong>num</strong>:FK(Descriptor), <strong>sub</strong>:SMALLINT,
+major:BOOL, <em>name</em>:TEXT</dd>
 <dt>Identifier (identifiers)</dt>
 <dd><strong>pmid</strong>:FK(Citation), <strong>namespace</strong>:VARCHAR(32), <em>value</em>:VARCHAR(256)</dd>
 <dt>Database (databases)</dt>
 <dd><strong>pmid</strong>:FK(Citation), <strong>name</strong>:VARCHAR(32), <strong>accession</strong>:VARCHAR(256)</dd>
 <dt>Chemical (chemicals)</dt>
-<dd><strong>pmid</strong>:FK(Citation), <strong>idx</strong>:VARCHAR(32), uid:VARCHAR(256), <em>name</em>:VARCHAR(256)</dd>
+<dd><strong>pmid</strong>:FK(Citation), <strong>idx</strong>:VARCHAR(32), uid:VARCHAR(256),
+<em>name</em>:VARCHAR(256)</dd>
 <dt>Keyword (keywords)</dt>
-<dd><strong>pmid</strong>:FK(Citation), <strong>owner</strong>:ENUM(owner), <strong>cnt</strong>:SMALLINT, major:BOOL, <em>value</em>:TEXT</dd>
+<dd><strong>pmid</strong>:FK(Citation), <strong>owner</strong>:ENUM(owner), <strong>cnt</strong>:SMALLINT,
+major:BOOL, <em>value</em>:TEXT</dd>
 </dl>
 <ul class="simple">
 <li><strong>bold</strong> (Composite) Primary Key</li>
@@ -633,54 +636,61 @@ initials:VARCHAR(128), forename:VARCHAR(128), suffix:VARCHAR(128),</dd>
 </dd>
 <dt>2.2.0</dt>
 <dd><ul class="first last">
-<li><p class="first">Ensured compatibility with the MEDLINE DTD updates for 2015 and cleaned some code pieces.
-Includes a fix for the bad (long) keyword in PMID 25114415 (with a carriage return).</p>
+<li><p class="first">Ensured compatibility with the MEDLINE DTD updates for 2015 and cleaned some
+code pieces.
+Includes a fix for the bad (long) keyword in PMID 25114415 (with a carriage
+return).</p>
 </li>
-<li><p class="first">A column was added to the ORM, resulting in backwards incompatible change: From this version
-on, the trailing string &quot;<tt class="docutils literal">(ABSTRACT TRUNCATED AT xxx WORDS)</tt>&quot; is stripped from AbstractText
-and instead the flag <tt class="docutils literal">truncated</tt> has be added to table <tt class="docutils literal">sections</tt> and is set if the string
-was present (but has been removed); To migrate your Postgres database, please run:</p>
+<li><p class="first">A column was added to the ORM, resulting in backwards incompatible change:
+From this version on, the trailing string &quot;<tt class="docutils literal">(ABSTRACT TRUNCATED AT xxx
+WORDS)</tt>&quot; is stripped from AbstractText and instead the flag <tt class="docutils literal">truncated</tt>
+has be added to table <tt class="docutils literal">sections</tt> and is set if the string was present (but
+has been removed); To migrate your Postgres database, please run:</p>
 <pre class="literal-block">
 ALTER TABLE sections ADD &quot;truncated&quot; boolean NOT NULL DEFAULT 'false';
 </pre>
-<p>Note that for one case this produces a Section with just one whitespace character, because
-the original content was only the &quot;ABSTRACT TRUNCATED...&quot; message.</p>
+<p>Note that for one case this produces a Section with just one whitespace
+character, because the original content was only the &quot;ABSTRACT TRUNCATED...&quot;
+message.</p>
 </li>
-<li><p class="first">MEDLINE formatted output is now written to STDOUT or a single file, because it makes selecting
-specific fields with grep very easy. Records are separated with an empty line.</p>
+<li><p class="first">MEDLINE formatted output is now written to STDOUT or a single file, because
+it makes selecting specific fields with grep very easy. Records are
+separated with an empty line.</p>
 </li>
 </ul>
 </dd>
 <dt>2.1.7</dt>
 <dd><ul class="first last simple">
-<li>Work-around for the limit of SQLite that only lets you use 999 variables per query.</li>
+<li>Work-around for the limit of SQLite that only lets you use 999 variables per
+query.</li>
 <li>Corrected the outdated VernacularTitle documentation in this document.</li>
 </ul>
 </dd>
 <dt>2.1.6</dt>
 <dd><ul class="first last simple">
-<li>Work-around for parsing citations that have an empty ArticleTitle element (which they
-shouldn't, according to the DTD): Either use the VernacularTitle (e.g., PMID 22536004), or
-otherwise set the title to &quot;UNKNOWN&quot; (the empty string is not a valid title) and log a
-warning.</li>
-<li>Work-around for non-unique PublicationType entries (e.g., PMID 10500000): drop non-unique
-PublicationTypes (with the same PMID and value).</li>
+<li>Work-around for parsing citations that have an empty ArticleTitle element
+(which they shouldn't, according to the DTD): Either use the VernacularTitle
+(e.g., PMID 22536004), or otherwise set the title to &quot;UNKNOWN&quot; (the empty
+string is not a valid title) and log a warning.</li>
+<li>Work-around for non-unique PublicationType entries (e.g., PMID 10500000):
+drop non-unique PublicationTypes (with the same PMID and value).</li>
 <li>Corrected left-over &quot;Medline&quot; entity names in this document to &quot;Citation&quot;.</li>
 </ul>
 </dd>
 <dt>2.1.5</dt>
 <dd><ul class="first last simple">
-<li>Added page_size=MAX and synchronous=OFF pragmas for SQLite DBs (hat-tip to Jason)</li>
+<li>Added page_size=MAX and synchronous=OFF pragmas for SQLite DBs (hat-tip to
+Jason)</li>
 </ul>
 </dd>
 <dt>2.1.4</dt>
 <dd><ul class="first last simple">
-<li>A MEDLINE issue found by Jason: PMID 24073073 has an empty keyword and keyword
-list that should not be there; Medic prevents adding improper data to the DB
-by raising an AssertionError.
+<li>A MEDLINE issue found by Jason: PMID 24073073 has an empty keyword and
+keyword list that should not be there; Medic prevents adding improper data
+to the DB by raising an AssertionError.
 To deal with such cases, medic now ensures each keyword is non-empty before
-attempting to generate a database entry and drops empty (i.e., whitespace-only)
-keyword data.</li>
+attempting to generate a database entry and drops empty (i.e.,
+whitespace-only) keyword data.</li>
 </ul>
 </dd>
 <dt>2.1.3</dt>
@@ -706,7 +716,8 @@ keyword data.</li>
 <dd><ul class="first last simple">
 <li>DB schema change from: <tt class="docutils literal">records() <span class="pre">-&gt;</span> sections(content)</tt>
 to: <tt class="docutils literal">citations(title) <span class="pre">-&gt;</span> abstracts(copyright) <span class="pre">-&gt;</span> sections(content)</tt></li>
-<li>name change: the entity/table Medline/records is now called Citation/citations</li>
+<li>name change: the entity/table Medline/records is now called
+Citation/citations</li>
 <li>title and copyright text is no longer stored in Section/sections</li>
 <li>added a new Abstract/abstracts entity/table with a <tt class="docutils literal">copyright</tt> attribute
 (formerly stored in <tt class="docutils literal">sections.content</tt> with <tt class="docutils literal">name</tt> = 'Copyright')</li>
@@ -738,7 +749,8 @@ the value of the OtherAbstract Type attribute for other abstracts)</li>
 <li>added MEDLINE publication date, volume, issue, and pagination support</li>
 <li>added MEDLINE output format and made it the default</li>
 <li>DB structure change: descriptors.major and qualifiers.major columns swapped</li>
-<li>DB structure change: section.name is now an untyped varchar (OtherAbstract separation)</li>
+<li>DB structure change: section.name is now an untyped varchar (OtherAbstract
+separation)</li>
 <li>cleaned up the ORM test cases</li>
 </ul>
 </dd>
