@@ -19,6 +19,7 @@ from medic.orm import Citation, Section, Abstract, Author, Descriptor, \
     Qualifier, Database, Identifier, Chemical, Keyword, PublicationType
 from medic.parser import MedlineXMLParser, PubMedXMLParser, Parser
 from medic.web import Download
+from sqlalchemy.sql import operators
 
 logger = logging.getLogger(__name__)
 
@@ -40,25 +41,46 @@ def select(session: Session, pmids: list([int])) -> iter([Citation]):
     """Return an iterator over all `Citation` records for a list of *PMIDs*."""
     count = 0
     offset = 0
-    total = len(pmids)
+    logger.debug("query limit: %s", QUERY_LIMIT)
+    logger.debug("check %s", pmids)
 
-    while offset < total:
-        for record in session.query(Citation).filter(
-                Citation.pmid.in_(pmids[offset:offset + QUERY_LIMIT])
-        ):
-            count += 1
-            yield record
+    if pmids:
+        while offset < len(pmids):
+            for record in session.query(Citation).filter(
+                    Citation.pmid.in_(pmids[offset:offset + QUERY_LIMIT])
+            ):
+                count += 1
+                yield record
 
-        offset += QUERY_LIMIT
+            offset += QUERY_LIMIT
+    else:
+        while True:
+            start = count
+
+            for record in session.query(Citation).slice(offset, offset + QUERY_LIMIT):
+                count += 1
+                yield record
+
+            if start == count:
+                break
+
+            offset += QUERY_LIMIT
 
     logger.info("retrieved %i records", count)
 
 
 def delete(session: Session, pmids: list([int])) -> bool:
     """Delete all records for a list of *PMIDs*."""
-    count = session.query(Citation).filter(Citation.pmid.in_(pmids)).delete(
-        synchronize_session=False
-    )
+    if pmids:
+        count = session.query(Citation).filter(Citation.pmid.in_(pmids)).delete(
+            synchronize_session=False
+        )
+    elif isinstance(pmids, list) and len(pmids) == 0:
+        count = session.query(Citation).delete(synchronize_session=False)
+    else:
+        logger.critical("pmids not an [empty] list of integers: %s", repr(pmids))
+        return False
+
     session.commit()
     logger.info("deleted %i records", count)
     return True

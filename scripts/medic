@@ -8,10 +8,10 @@ insert:  PubMed XML files or a list of PMIDs (contacting EUtils) into the DB
          (slower than using "parse" and a DB dump); ==
 update:  existing records or add new records from PubMed XML files or a list
          of PMIDs (slow!); ==
-write:   records in various formats for a given list of PMIDs (implicitly sets
-         --pmid-lists); ==
-delete:  records from the DB for a given list of PMIDs (implicitly sets
-         --pmid-lists)
+write:   records in various formats for a given list of PMIDs (only
+         --pmid-lists or FILE="ALL"); ==
+delete:  records from the DB for a given list of PMIDs (only
+         --pmid-lists or FILE="ALL")
 """
 import logging
 import os
@@ -25,8 +25,8 @@ __version__ = '2.2.0'
 
 def Main(command, files_or_pmids, session, unique=True):
     """
-    :param command: one of create/read/update/delete
-    :param files_or_pmids: the list of files or PMIDs to process
+    :param command: str; one of insert, write, update, or delete
+    :param files_or_pmids: list of files or PMIDs to process; for write and delete, all records are affected if empty
     :param session: the DB session
     :param unique: flag to skip versioned records if VersionID != "1"
     """
@@ -47,7 +47,7 @@ def WriteTabular(query, output_file: str):
     def prune(string):
         return string.replace('\n', ' ').replace('\t', ' ')
 
-    logging.debug("writing to TSV file %s", output_file)
+    logging.debug("writing to TSV %s", output_file if output_file != '.' else 'STDOUT')
     file = open(output_file, 'wt') if output_file != '.' else sys.stdout
 
     try:
@@ -74,7 +74,7 @@ def WriteHTML(query, output_file: str):
     """Write `query` results as HTML to a file or STDOUT if ``output_file == '.'``\ ."""
     from medic.web import FormatHTML
 
-    logging.debug("writing to HTML file %s", output_file)
+    logging.debug("writing to HTML %s", output_file if output_file != '.' else 'STDOUT')
     file = open(output_file, 'wt', encoding='utf-8') if output_file != '.' else sys.stdout
 
     try:
@@ -119,7 +119,7 @@ def WriteSection(section, file):
 
 def WriteMedline(query, output_file: str):
     """Write `query` results to a MEDLINE file or STDOUT if ``output_file == '.'``\ ."""
-    logging.debug("writing MEDLINE to file %s", output_file)
+    logging.debug("writing MEDLINE to %s", output_file if output_file != '.' else 'STDOUT')
     file = open(output_file, 'wt', encoding='utf-8') if output_file != '.' else sys.stdout
 
     try:
@@ -251,7 +251,8 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         'files', metavar='FILE/PMID', nargs='+',
-        help='MEDLINE XML file, PMID (integer), or PMID list file'
+        help='MEDLINE XML file, PMID (integer), PMID list file, '
+             'or the string "ALL" if writing or deleting'
     )
     parser.add_argument('--version', action='version', version=__version__)
     parser.add_argument(
@@ -261,30 +262,32 @@ if __name__ == '__main__':
         default='postgresql://localhost/medline'
     )
     parser.add_argument(
-        '--format', choices=['full', 'html', 'tiab', 'tsv'], default='medline',
-        help='medline: [default] write all content to one MEDLINE file; '
-             'html: write all content to one HTML file; '
-             'tsv: write one TSV line per PMID, title, and abstract; '
-             'tiab: write title and abstract only plain-text to files; '
-    )
-    parser.add_argument(
         '--all', action='store_true',
-        help='parse records with VersionID != "1"'
+        help='when parsing: also add records with VersionID != "1"'
     )
     parser.add_argument(
         '--update', action='store_true',
-        help='parsing MEDLINE XML files: '
+        help='when parsing MEDLINE XML files: '
              'delete all parsed records prior to inserting them'
     )
     parser.add_argument(
         '--pmid-lists', action='store_true',
-        help='assume input files are lists of PMIDs, not XML files ' +
-             '(implicitly set for delete and write operations)'
+        help='any command except parse: '
+             'if FILE/PMID are files, treat them as lists of PMIDs, not XML files '
+             '(this option is always set for delete and write operations)'
     )
     parser.add_argument(
         '--output', metavar='DIR', default=os.path.curdir,
-        help='dump/write to a specific directory or file '
+        help='when writing: dump/write to a specific directory or file '
              '(for formats "medline", "tsv" and "html")'
+    )
+    parser.add_argument(
+        '--format', choices=['full', 'html', 'tiab', 'tsv'], default='medline',
+        help='write format choice; '
+             'medline: [default] write all content to one long MEDLINE file; '
+             'html: write all content to one long HTML file; '
+             'tsv: write one tab-separated file with PMID, title, and abstract per row; '
+             'tiab: write title and abstract only plain-text to individual files; '
     )
     parser.add_argument(
         '--error', action='store_const', const=logging.ERROR,
@@ -307,8 +310,8 @@ if __name__ == '__main__':
         format='%(asctime)s %(name)s %(levelname)s: %(message)s'
     )
 
-    if args.command not in ('parse', 'write', 'insert', 'update', 'delete'):
-        parser.error('illegal command "{}"'.format(args.command))
+    #if args.command not in ('parse', 'write', 'insert', 'update', 'delete'):
+    #    parser.error('illegal command "{}"'.format(args.command))
 
     if args.command in ('write', 'delete'):
         args.pmid_lists = True
@@ -331,6 +334,9 @@ if __name__ == '__main__':
 
         result = dump(args.files, args.output, not args.all, args.update)
     else:
+        if len(args.files) == 1 and args.files[0] == "ALL" and not os.path.isfile("ALL"):
+            args.files = []
+
         try:
             InitDb(args.url)
         except OperationalError as e:

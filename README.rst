@@ -119,13 +119,17 @@ Add a single MEDLINE or PubMed XML file to the database::
 
   medic insert pudmed.xml
 
-Export a few records from the database as HTML (to STDOUT)::
-
-  medic write --format html 292837491 128374 213487
-
 Note that if the suffix ".gz" is present, the parser automatically
 decompresses the XML file(s) first. This feature *only* works with
 GNU-zipped files and the ".gz" suffix must be present.
+
+Export a few records from the database as HTML (to "articles.html")::
+
+  medic write --format html --output articles.html 292837491 128374 213487
+
+Write the content of the entire database (in MEDLINE format, to STDOUT)::
+
+  medic write ALL
 
 Therefore, command line arguments are treated as follows:
 
@@ -305,6 +309,8 @@ Fields/Values
 Version History
 ===============
 
+2.3.0
+  - Added special argument "ALL" to write/delete all records.
 2.2.0
   - Ensured compatibility with the MEDLINE DTD updates for 2015 and cleaned some code pieces.
     Includes a fix for the bad (long) keyword in PMID 25114415 (with a carriage return).
