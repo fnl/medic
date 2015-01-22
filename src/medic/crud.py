@@ -41,10 +41,10 @@ def select(session: Session, pmids: list([int])) -> iter([Citation]):
     """Return an iterator over all `Citation` records for a list of *PMIDs*."""
     count = 0
     offset = 0
-    logger.debug("query limit: %s", QUERY_LIMIT)
-    logger.debug("check %s", pmids)
 
     if pmids:
+        logger.debug("query %s records (limit: %s)", len(pmids), QUERY_LIMIT)
+
         while offset < len(pmids):
             for record in session.query(Citation).filter(
                     Citation.pmid.in_(pmids[offset:offset + QUERY_LIMIT])
@@ -54,17 +54,11 @@ def select(session: Session, pmids: list([int])) -> iter([Citation]):
 
             offset += QUERY_LIMIT
     else:
-        while True:
-            start = count
+        logger.debug("query all records (yielding: %s)", QUERY_LIMIT)
 
-            for record in session.query(Citation).slice(offset, offset + QUERY_LIMIT):
-                count += 1
-                yield record
-
-            if start == count:
-                break
-
-            offset += QUERY_LIMIT
+        for record in session.query(Citation).yield_per(QUERY_LIMIT):
+            count += 1
+            yield record
 
     logger.info("retrieved %i records", count)
 

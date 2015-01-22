@@ -312,6 +312,8 @@ Fields/Values
 Version History
 ===============
 
+2.3.1
+  - Fixed a bug when fetching all records on PubMed from database with "ALL".
 2.3.0
   - Added special argument "ALL" to write/delete all records.
 2.2.0
