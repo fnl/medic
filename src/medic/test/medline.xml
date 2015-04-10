@@ -28,7 +28,7 @@
                         <Volume>vol 1</Volume>
                         <Issue>no 1</Issue>
                         <PubDate>
-                            <MedlineDate>some random date string</MedlineDate>
+                            <MedlineDate>1950 some random date string</MedlineDate>
                             <!-- PubDate ((Year, ((Month, Day?) | Season)?) | MedlineDate) -->
                         </PubDate>
                     </JournalIssue>
@@ -269,7 +269,7 @@
                 <ArticleTitle>title</ArticleTitle>
                 <Journal><JournalIssue>
                     <PubDate>
-                        <Year>year</Year>
+                        <Year>1990</Year>
                         <Season>season</Season>
                     </PubDate>
                 </JournalIssue></Journal>

@@ -819,10 +819,18 @@ class Citation(_Base):
             the record's identifier (PubMed ID)
         status
             the current status of this record (see `Citation.STATES`)
+        year
+            the year of publication
         title
             the record's title
         journal
             the journal name (Medline TA)
+        pub_date
+            the string of the publication date
+        issue
+            the journal issue string
+        pagination
+            the pagination string of the journal
         created
             the record's creation date
         completed
@@ -891,6 +899,7 @@ class Citation(_Base):
 
     pmid = Column(BigInteger, CheckConstraint('pmid > 0'), primary_key=True, autoincrement=False)
     status = Column(Enum(*STATES, name='state'), nullable=False)
+    year = Column(SmallInteger, CheckConstraint('year > 1000 AND year < 3000'), nullable=False)
     title = Column(UnicodeText, CheckConstraint("title <> ''"), nullable=False)
     journal = Column(Unicode(length=256), CheckConstraint("journal <> ''"), nullable=False)
     pub_date = Column(Unicode(length=256), CheckConstraint("pub_date <> ''"), nullable=False)
@@ -914,11 +923,13 @@ class Citation(_Base):
         assert revised is None or isinstance(revised, date), repr(revised)
         assert pagination is None or pagination
         assert issue is None or issue
+        assert len(pub_date) > 4, pub_date
         self.pmid = pmid
         self.status = status
         self.title = title
         self.journal = journal
         self.pub_date = pub_date
+        self.year = int(pub_date[:4])
         self.issue = issue
         self.pagination = pagination
         self.created = created
@@ -927,8 +938,8 @@ class Citation(_Base):
 
     def __str__(self):
         return '{}\n'.format('\t'.join(map(str, [
-            NULL(self.pmid), NULL(self.status), STRING(self.title), STRING(self.journal),
-            STRING(self.pub_date), NULL(self.issue), NULL(self.pagination),
+            NULL(self.pmid), NULL(self.status), NULL(self.year), STRING(self.title),
+            STRING(self.journal), STRING(self.pub_date), NULL(self.issue), NULL(self.pagination),
             DATE(self.created), DATE(self.completed), DATE(self.revised),
             DATE(date.today() if self.modified is None else self.modified)
         ])))
@@ -940,6 +951,7 @@ class Citation(_Base):
         return isinstance(other, Citation) and \
             self.pmid == other.pmid and \
             self.status == other.status and \
+            self.year == other.year and \
             self.journal == other.journal and \
             self.title == other.title and \
             self.pub_date == other.pub_date and \

@@ -345,7 +345,8 @@ To summarize, \fImedic\fP by default \fBremoves\fP alternate citations.
 .INDENT 0.0
 .TP
 .B Citation (citations)
-\fBpmid\fP:BIGINT, \fIstatus\fP:ENUM(state), \fItitle\fP:TEXT, \fIjournal\fP:VARCHAR(256),
+\fBpmid\fP:BIGINT, \fIstatus\fP:ENUM(state), \fIyear\fP:SMALLINT,
+\fItitle\fP:TEXT, \fIjournal\fP:VARCHAR(256),
 \fIpub_date\fP:VARCHAR(256), issue:VARCHAR(256), pagination:VARCHAR(256),
 \fIcreated\fP:DATE, completed:DATE, revised:DATE, modified:DATE
 .TP
@@ -465,7 +466,7 @@ OtherID (\fBIdentifier.value\fP iff \fISource\fP is "PMC" with \fBIdentifier.nam
 .IP \(bu 2
 PMID (\fBCitation.pmid\fP)
 .IP \(bu 2
-PubDate (\fBCitation.pub_date\fP)
+PubDate (\fBCitation.pub_date\fP and \fBCitation.year\fP)
 .IP \(bu 2
 PublicationType (\fBPublicationType.value\fP)
 .IP \(bu 2
@@ -481,6 +482,27 @@ Volume (\fBCitation.issue\fP)
 .UNINDENT
 .SH VERSION HISTORY
 .INDENT 0.0
+.TP
+.B 2.4.0
+.INDENT 7.0
+.IP \(bu 2
+Added a \fByear\fP column to table \fBcitations\fP to make it easier to select for
+the year of publication. To migrate/update your DB, run these two commands:
+.INDENT 2.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+ALTER TABLE citations ADD "year" smallint NOT NULL DEFAULT 0;
+UPDATE citations SET year = substring(pub_date FROM \(aq^[12][890][0\-9][0\-9]\(aq)::int;
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Note that the (currently) oldest publications in MEDLINE are from 1809,
+from the first issue of the journal "Med Chir Trans".
+.UNINDENT
 .TP
 .B 2.3.1
 .INDENT 7.0

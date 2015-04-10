@@ -538,7 +538,8 @@ process other versions of a citation, use the option <tt class="docutils literal
 <h1>Database Tables</h1>
 <dl class="docutils">
 <dt>Citation (citations)</dt>
-<dd><strong>pmid</strong>:BIGINT, <em>status</em>:ENUM(state), <em>title</em>:TEXT, <em>journal</em>:VARCHAR(256),
+<dd><strong>pmid</strong>:BIGINT, <em>status</em>:ENUM(state), <em>year</em>:SMALLINT,
+<em>title</em>:TEXT, <em>journal</em>:VARCHAR(256),
 <em>pub_date</em>:VARCHAR(256), issue:VARCHAR(256), pagination:VARCHAR(256),
 <em>created</em>:DATE, completed:DATE, revised:DATE, modified:DATE</dd>
 <dt>Abstract (abstracts)</dt>
@@ -616,7 +617,7 @@ major:BOOL, <em>value</em>:TEXT</dd>
 <li>OtherAbstract (with <em>Type</em> as <tt class="docutils literal">Abstract.source</tt>)</li>
 <li>OtherID (<tt class="docutils literal">Identifier.value</tt> iff <em>Source</em> is &quot;PMC&quot; with <tt class="docutils literal">Identifier.namespace</tt> as &quot;pmc&quot;)</li>
 <li>PMID (<tt class="docutils literal">Citation.pmid</tt>)</li>
-<li>PubDate (<tt class="docutils literal">Citation.pub_date</tt>)</li>
+<li>PubDate (<tt class="docutils literal">Citation.pub_date</tt> and <tt class="docutils literal">Citation.year</tt>)</li>
 <li>PublicationType (<tt class="docutils literal">PublicationType.value</tt>)</li>
 <li>QualifierName (<tt class="docutils literal">Qualifier.name</tt> with <em>MajorTopicYN</em> as <tt class="docutils literal">Qualifier.major</tt>)</li>
 <li>RegistryNumber (<tt class="docutils literal">Chemical.uid</tt>)</li>
@@ -629,6 +630,19 @@ major:BOOL, <em>value</em>:TEXT</dd>
 <div class="section" id="version-history">
 <h1>Version History</h1>
 <dl class="docutils">
+<dt>2.4.0</dt>
+<dd><ul class="first last">
+<li><p class="first">Added a <tt class="docutils literal">year</tt> column to table <tt class="docutils literal">citations</tt> to make it easier to select for
+the year of publication. To migrate/update your DB, run these two commands:</p>
+<pre class="literal-block">
+ALTER TABLE citations ADD &quot;year&quot; smallint NOT NULL DEFAULT 0;
+UPDATE citations SET year = substring(pub_date FROM '^[12][890][0-9][0-9]')::int;
+</pre>
+<p>Note that the (currently) oldest publications in MEDLINE are from 1809,
+from the first issue of the journal &quot;Med Chir Trans&quot;.</p>
+</li>
+</ul>
+</dd>
 <dt>2.3.1</dt>
 <dd><ul class="first last simple">
 <li>Fixed a bug when fetching all records on PubMed from database with &quot;ALL&quot;.</li>

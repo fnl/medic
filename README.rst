@@ -215,7 +215,8 @@ Database Tables
 ===============
 
 Citation (citations)
-  **pmid**:BIGINT, *status*:ENUM(state), *title*:TEXT, *journal*:VARCHAR(256),
+  **pmid**:BIGINT, *status*:ENUM(state), *year*:SMALLINT,
+  *title*:TEXT, *journal*:VARCHAR(256),
   *pub_date*:VARCHAR(256), issue:VARCHAR(256), pagination:VARCHAR(256),
   *created*:DATE, completed:DATE, revised:DATE, modified:DATE
 
@@ -301,7 +302,7 @@ Fields/Values
 - OtherAbstract (with *Type* as ``Abstract.source``)
 - OtherID (``Identifier.value`` iff *Source* is "PMC" with ``Identifier.namespace`` as "pmc")
 - PMID (``Citation.pmid``)
-- PubDate (``Citation.pub_date``)
+- PubDate (``Citation.pub_date`` and ``Citation.year``)
 - PublicationType (``PublicationType.value``)
 - QualifierName (``Qualifier.name`` with *MajorTopicYN* as ``Qualifier.major``)
 - RegistryNumber (``Chemical.uid``)
@@ -312,6 +313,15 @@ Fields/Values
 Version History
 ===============
 
+2.4.0
+  - Added a ``year`` column to table ``citations`` to make it easier to select for
+    the year of publication. To migrate/update your DB, run these two commands::
+
+        ALTER TABLE citations ADD "year" smallint NOT NULL DEFAULT 0;
+        UPDATE citations SET year = substring(pub_date FROM '^[12][890][0-9][0-9]')::int;
+
+    Note that the (currently) oldest publications in MEDLINE are from 1809,
+    from the first issue of the journal "Med Chir Trans".
 2.3.1
   - Fixed a bug when fetching all records on PubMed from database with "ALL".
 2.3.0

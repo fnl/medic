@@ -24,7 +24,7 @@ DATA = [
     PublicationType(1, 'another'),
     Chemical(1, 1, 'name', 'uid'),
     Keyword(1, 'NOTNLM', 1, 'name', True),
-    Citation(1, 'MEDLINE', 'title', 'journal', 'pub_date', date.today()),
+    Citation(1, 'MEDLINE', 'title', 'journal', '1990 pub_date', date.today()),
 ]
 
 

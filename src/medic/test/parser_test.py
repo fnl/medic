@@ -57,10 +57,10 @@ class ParserTest(TestCase):
         orm.Keyword(PMID, 'NLM', 2, 'major keyword', True),
         orm.Keyword(PMID, 'NLM', 3, 'minor keyword'),
         orm.Keyword(PMID, 'NASA', 1, 'NASA keyword'),
-        orm.Citation(PMID, 'MEDLINE', '[a translated title].', 'NLM Jour Abbrev', 'some random date string',
+        orm.Citation(PMID, 'MEDLINE', '[a translated title].', 'NLM Jour Abbrev', '1950 some random date string',
                      date(1974, 2, 19), date(1974, 11, 19), date(2006, 2, 14),
                      'vol 1(no 1)', '100-10'),
-        orm.Citation(987, 'MEDLINE', 'title', 'NLM Jour Abbrev', 'year season',
+        orm.Citation(987, 'MEDLINE', 'title', 'NLM Jour Abbrev', '1990 season',
                      date(1974, 2, 19), date(1974, 11, 19), date(2006, 2, 14)),
         orm.Identifier(987, 'doi', 'some doi'),
     ]

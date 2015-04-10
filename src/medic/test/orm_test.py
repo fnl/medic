@@ -15,7 +15,7 @@ URI = "sqlite+pysqlite://"  # use in-memmory SQLite DB for testing
 
 
 def DefaultCitation(pmid=1, status='MEDLINE', title='title',
-                    journal='journal', pub_date='published', created=date.today()):
+                    journal='journal', pub_date='1990 published', created=date.today()):
     return Citation(pmid, status, title, journal, pub_date, created)
 
 
@@ -80,7 +80,7 @@ class CitationTest(TestCase, TestMixin):
         self.sess = Session()
         self.klass = Citation
         self.entity = namedtuple('Citation', 'pmid status title journal pub_date created')
-        self.defaults = self.entity(1, 'MEDLINE', 'title', 'journal', 'published', date.today())
+        self.defaults = self.entity(1, 'MEDLINE', 'title', 'journal', '1990 published', date.today())
 
     def testCreate(self):
         self.assertCreate()
@@ -90,7 +90,7 @@ class CitationTest(TestCase, TestMixin):
         self.assertDifference(pmid=2)
         self.assertDifference(status='In-Data-Review')
         self.assertDifference(journal='other')
-        self.assertDifference(pub_date='other')
+        self.assertDifference(pub_date='1960 other')
 
     def testBigPmids(self):
         big = 987654321098765432  # up to 18 decimals
@@ -176,8 +176,8 @@ class CitationTest(TestCase, TestMixin):
 
     def testToString(self):
         d = date.today()
-        r = Citation(1, 'MEDLINE', 'title', 'journal\\.', 'PubDate', d)
-        line = "1\tMEDLINE\ttitle\tjournal\\\\.\tPubDate\t\\N\t\\N\t{}\t\\N\t\\N\t{}\n".format(
+        r = Citation(1, 'MEDLINE', 'title', 'journal\\.', '1990 PubDate', d)
+        line = "1\tMEDLINE\t1990\ttitle\tjournal\\\\.\t1990 PubDate\t\\N\t\\N\t{}\t\\N\t\\N\t{}\n".format(
             d.isoformat(), d.isoformat()
         )
         self.assertEqual(line, str(r))
@@ -189,8 +189,8 @@ class CitationTest(TestCase, TestMixin):
     def testInsert(self):
         data = {
             Citation.__tablename__: [
-                dict(pmid=1, status='MEDLINE', title='Title', journal='Journal',
-                     pub_date='PubDate', created=date.today())
+                dict(pmid=1, status='MEDLINE', year=1990, title='Title', journal='Journal',
+                     pub_date='1990 PubDate', created=date.today())
             ],
             Abstract.__tablename__: [
                 dict(pmid=1, source='NLM')
@@ -231,12 +231,12 @@ class CitationTest(TestCase, TestMixin):
     def testInsertMultiple(self):
         d = date.today()
         data = {Citation.__tablename__: [
-            dict(pmid=1, status='MEDLINE', title='Title 1',
-                 journal='Journal 1', pub_date='PubDate', created=d),
-            dict(pmid=2, status='MEDLINE', title='Title 2',
-                 journal='Journal 2', pub_date='PubDate', created=d),
-            dict(pmid=3, status='MEDLINE', title='Title 3',
-                 journal='Journal 3', pub_date='PubDate', created=d)
+            dict(pmid=1, status='MEDLINE', year=1990, title='Title 1',
+                 journal='Journal 1', pub_date='1990 PubDate', created=d),
+            dict(pmid=2, status='MEDLINE', year=1990, title='Title 2',
+                 journal='Journal 2', pub_date='1990 PubDate', created=d),
+            dict(pmid=3, status='MEDLINE', year=1990, title='Title 3',
+                 journal='Journal 3', pub_date='1990 PubDate', created=d)
         ]}
         Citation.insert(data)
         count = 0
