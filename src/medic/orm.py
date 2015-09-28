@@ -923,7 +923,7 @@ class Citation(_Base):
         assert revised is None or isinstance(revised, date), repr(revised)
         assert pagination is None or pagination
         assert issue is None or issue
-        assert len(pub_date) > 4, pub_date
+        assert len(pub_date) >= 4, pub_date
         self.pmid = pmid
         self.status = status
         self.title = title
