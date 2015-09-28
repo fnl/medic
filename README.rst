@@ -315,7 +315,7 @@ Version History
 
 2.4.1
   - Fixed a bug while parsing "PubDate" records that asserted the wrong length.
-    Thanks to Josef Steiner for reporting it.
+    Thanks to Josef Seiser for reporting it.
 2.4.0
   - Added a ``year`` column to table ``citations`` to make it easier to select for
     the year of publication. To migrate/update your DB, run these two commands::
